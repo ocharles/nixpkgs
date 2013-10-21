@@ -32,4 +32,7 @@ stdenv.mkDerivation rec {
     description = "A powerful, open source object-relational database system";
     license = "bsd";
   };
+
+  installTargets = [ "install-world" ];
+  makeFlags = [ "world" ];
 }

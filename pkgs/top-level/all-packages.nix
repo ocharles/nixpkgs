@@ -7402,6 +7402,8 @@ let
 
   antiword = callPackage ../applications/office/antiword {};
 
+  arbtt = haskellPackages.arbtt;
+
   ardour = callPackage ../applications/audio/ardour {
     inherit (gnome) libgnomecanvas libgnomecanvasmm;
   };

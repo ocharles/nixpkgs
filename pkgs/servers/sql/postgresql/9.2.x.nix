@@ -1,18 +1,31 @@
 { stdenv, fetchurl, zlib, readline }:
 
-let version = "9.2.6"; in
+let
+  version = "9.2.6";
+
+  osspUuid = stdenv.mkDerivation rec {
+    name = "ossp-uuid-1.6.2";
+    src = fetchurl {
+      url = "ftp://ftp.ossp.org/pkg/lib/uuid/uuid-1.6.2.tar.gz";
+      sha256 = "1c6m1wgq0cpzpmjlff8dyz9sq9s41vsj6i42hsv8npxabci1b9hi";
+    };
+  };
+  
+in
 
 stdenv.mkDerivation rec {
   name = "postgresql-${version}";
 
   src = fetchurl {
     url = "mirror://postgresql/source/v${version}/${name}.tar.bz2";
-    sha256 = "4ba98053a66e5678af93dbc2956e8b04623f759e174f48940c41f4251cf0f886";
+    sha256 = "11pqy0f2bx211ja4hkqpkrskyqh4idp9bhnvjfpphmkflr9q1aab";
   };
 
-  buildInputs = [ zlib readline ];
+  buildInputs = [ zlib readline osspUuid ];
 
   enableParallelBuilding = true;
+
+  configureFlags = [ "--with-ossp-uuid" ];
 
   makeFlags = [ "world" ];
 
