@@ -2196,7 +2196,7 @@ let self = _self // overrides; _self = with self; {
 
   DBDPg = import ../development/perl-modules/DBD-Pg {
     inherit stdenv fetchurl buildPerlPackage DBI;
-    inherit (pkgs) postgresql;
+    inherit (__overrides) postgresql;
   };
 
   DBFile = import ../development/perl-modules/DB_File {
