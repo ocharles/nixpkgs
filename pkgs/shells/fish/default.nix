@@ -1,4 +1,7 @@
-{ stdenv, fetchurl, autoconf, ncurses, which, groff, gettext }:
+{ stdenv, fetchurl, autoconf, ncurses, which, groff, gettext
+, makeWrapper
+, utillinux, gnused, inetutils, coreutils
+}:
 
 stdenv.mkDerivation rec {
   name = "fish-2.1.0";
@@ -10,7 +13,7 @@ stdenv.mkDerivation rec {
 
   nativeBuildInputs = [ autoconf ];
 
-  buildInputs = [ ncurses which ];
+  buildInputs = [ ncurses which makeWrapper ];
 
   preConfigure = ''
     autoconf
@@ -22,6 +25,15 @@ stdenv.mkDerivation rec {
     sed -e "s|gettext |${gettext}/bin/gettext |" \
         -e "s|which |command -v |" \
         -i "$out/share/fish/functions/_.fish"
+
+    mkdir $out/bin-orig
+    mv $out/bin/fish $out/bin-orig
+
+    makeWrapper $out/bin-orig/fish $out/bin/fish \
+      --prefix PATH : ${coreutils}/bin \
+      --prefix PATH : ${utillinux}/bin \
+      --prefix PATH : ${gnused}/bin \
+      --prefix PATH : ${inetutils}/bin
   '';
 
   meta = with stdenv.lib; {
