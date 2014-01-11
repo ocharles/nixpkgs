@@ -1,4 +1,4 @@
-{ cabal, extensibleExceptions, filepath, mtl, utf8String, X11 }:
+{ cabal, extensibleExceptions, filepath, mtl, utf8String, X11, xmessage }:
 
 cabal.mkDerivation (self: {
   pname = "xmonad";
@@ -8,6 +8,7 @@ cabal.mkDerivation (self: {
   isExecutable = true;
   buildDepends = [
     extensibleExceptions filepath mtl utf8String X11
+    xmessage
   ];
   postInstall = ''
     mkdir -p $out/share/man/man1
