@@ -3830,6 +3830,10 @@ let self = _self // overrides; _self = with self; {
       sha256 = "eda90ba26f8a0cef02d38f08a1786a203beec1309279493c78eed13567d0fa7e";
     };
     buildInputs = [ pkgs.unzip ];
+    meta = {
+      maintainers = with maintainers; [ ocharles ];
+      platforms   = stdenv.lib.platforms.unix;
+    };
   };
 
   HTMLElementExtended = buildPerlPackage {
