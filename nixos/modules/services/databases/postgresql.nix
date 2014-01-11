@@ -15,8 +15,8 @@ let
       postBuild =
         ''
           mkdir -p $out/bin
-          rm $out/bin/{pg_config,postgres,pg_ctl}
-          cp --target-directory=$out/bin ${pg}/bin/{postgres,pg_config,pg_ctl}
+          #rm -f $out/bin/{pg_config,postgres,pg_ctl}
+          #cp --target-directory=$out/bin ${pg}/bin/{postgres,pg_config,pg_ctl}
         '';
     };
 
