@@ -8016,6 +8016,8 @@ let
 
   mi2ly = callPackage ../applications/audio/mi2ly {};
 
+  pianoteq = callPackage ../applications/audio/pianoteq { };
+
   praat = callPackage ../applications/audio/praat { };
 
   quvi = callPackage ../applications/video/quvi/tool.nix { };
