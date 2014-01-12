@@ -7104,11 +7104,11 @@ pythonPackages = modules // import ./python-packages-generated.nix {
   });
 
   twisted = buildPythonPackage rec {
-    name = "twisted-13.2.0";
+    name = "twisted-10.2.0";
 
     src = fetchurl {
-      url = "https://pypi.python.org/packages/source/T/Twisted/Twisted-13.2.0.tar.bz2";
-      sha256 = "1wrcqv5lvgwk2aq83qb2s2ng2vx14hbjjk2gc30cg6h1iiipal89";
+      url = http://tmrc.mit.edu/mirror/twisted/Twisted/10.2/Twisted-10.2.0.tar.bz2;
+      sha256 = "110c30z622jn14yany1sxfaqj5qx20n9rc9zqacxlwma30fdcbjn";
     };
 
     propagatedBuildInputs = [ zope_interface ];
@@ -7129,7 +7129,7 @@ pythonPackages = modules // import ./python-packages-generated.nix {
         and licensed under the MIT license.
       '';
 
-      license = pkgs.lib.licenses.mit;
+      license = "MIT";
 
       maintainers = [ ];
     };
