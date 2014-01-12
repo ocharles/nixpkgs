@@ -3,14 +3,6 @@
 let
   version = "9.2.6";
 
-  osspUuid = stdenv.mkDerivation rec {
-    name = "ossp-uuid-1.6.2";
-    src = fetchurl {
-      url = "ftp://ftp.ossp.org/pkg/lib/uuid/uuid-1.6.2.tar.gz";
-      sha256 = "1c6m1wgq0cpzpmjlff8dyz9sq9s41vsj6i42hsv8npxabci1b9hi";
-    };
-  };
-  
 in
 
 stdenv.mkDerivation rec {
@@ -21,11 +13,9 @@ stdenv.mkDerivation rec {
     sha256 = "11pqy0f2bx211ja4hkqpkrskyqh4idp9bhnvjfpphmkflr9q1aab";
   };
 
-  buildInputs = [ zlib readline osspUuid ];
+  buildInputs = [ zlib readline ];
 
   enableParallelBuilding = true;
-
-  configureFlags = [ "--with-ossp-uuid" ];
 
   makeFlags = [ "world" ];
 
