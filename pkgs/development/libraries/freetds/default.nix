@@ -1,4 +1,4 @@
-{ stdenv, fetchurl }:
+{ stdenv, fetchurl, unixODBC, libgcrypt, gnutls }:
 
 stdenv.mkDerivation {
   name = "freetds-0.91";
@@ -8,6 +8,14 @@ stdenv.mkDerivation {
     sha256 = "0r946axzxs0czsmr7283w7vmk5jx3jnxxc32d2ncxsrsh2yli0ba";
   };
 
+  buildInputs = [ libgcrypt gnutls unixODBC ];
+
+  configureFlags = [
+    "--with-unixodbc=${unixODBC}"
+    "--with-tdsver=4.2"
+    #"--with-gnutls"
+  ];
+
   meta = {
     description =
       "Libraries to natively talk to Microsoft SQL Server and Sybase databases";
@@ -16,4 +24,3 @@ stdenv.mkDerivation {
     platforms = stdenv.lib.platforms.all;
   };
 }
-
