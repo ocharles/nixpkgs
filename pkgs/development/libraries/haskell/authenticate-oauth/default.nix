@@ -1,4 +1,5 @@
-{ cabal, base64Bytestring, blazeBuilder, blazeBuilderConduit
+{ fetchgit
+, cabal, base64Bytestring, blazeBuilder, blazeBuilderConduit
 , conduit, cryptoPubkeyTypes, dataDefault, httpConduit, httpTypes
 , monadControl, random, resourcet, RSA, SHA, time, transformers
 }:
@@ -6,9 +7,12 @@
 cabal.mkDerivation (self: {
   pname = "authenticate-oauth";
   version = "1.4.0.8";
-  sha256 = "1mc36d6lkmqywzsxhzwv4445mmwdz0rr5ibd2a1nbgw5c5jw76fy";
-  patches = [ ./RSA2.patch ];
-  patchFlags = "-p2";
+  src = fetchgit {
+    url = git://github.com/ocharles/authenticate;
+    sha256 = "0ln3bbqy2q6cdx5rw2yh9wg5nr47yblklrkvk4ghkj1fhmyimdpr";
+    rev = "332e06f5933c6b75a073349476bfae9e8d263642";
+  };
+  setSourceRoot = "sourceRoot=git-export/authenticate-oauth";
   buildDepends = [
     base64Bytestring blazeBuilder blazeBuilderConduit conduit
     cryptoPubkeyTypes dataDefault httpConduit httpTypes monadControl

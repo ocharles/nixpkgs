@@ -1,18 +1,27 @@
-{ cabal, hspec, parsec, systemFileio, systemFilepath, text, time }:
+{ cabal, aeson, blazeBuilder, blazeHtml, blazeMarkup, exceptions
+, hspec, httpTypes, HUnit, parsec, systemFileio, systemFilepath
+, text, time, transformers, wai, waiAppStatic
+}:
 
 cabal.mkDerivation (self: {
   pname = "shakespeare";
-  version = "1.2.1.1";
-  sha256 = "1if3mfkcdfls17pcfgn8grxykq8ia91i7qr4q6m1gy6q4gqs6fkg";
-  buildDepends = [ parsec systemFileio systemFilepath text time ];
+  version = "2.0.0.1";
+  sha256 = "0c8pkswfm2b940vxincivkk8ibpv13jvf3irk740lmlra0h8bp7a";
+  isLibrary = true;
+  isExecutable = true;
+  buildDepends = [
+    aeson blazeBuilder blazeHtml blazeMarkup exceptions httpTypes
+    parsec systemFileio systemFilepath text time transformers wai
+    waiAppStatic
+  ];
   testDepends = [
-    hspec parsec systemFileio systemFilepath text time
+    aeson blazeHtml blazeMarkup exceptions hspec HUnit parsec
+    systemFileio systemFilepath text time transformers
   ];
   meta = {
     homepage = "http://www.yesodweb.com/book/shakespearean-templates";
     description = "A toolkit for making compile-time interpolated templates";
     license = self.stdenv.lib.licenses.mit;
     platforms = self.ghc.meta.platforms;
-    maintainers = [ self.stdenv.lib.maintainers.andres ];
   };
 })

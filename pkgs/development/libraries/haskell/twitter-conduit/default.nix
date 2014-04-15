@@ -1,4 +1,5 @@
-{ cabal, aeson, attoparsec, attoparsecConduit, authenticateOauth
+{ fetchgit
+, cabal, aeson, attoparsec, attoparsecConduit, authenticateOauth
 , conduit, dataDefault, doctest, failure, filepath, hlint
 , httpClient, httpConduit, httpTypes, lens, liftedBase
 , monadControl, monadLogger, resourcet, shakespeare, text, time
@@ -8,7 +9,10 @@
 cabal.mkDerivation (self: {
   pname = "twitter-conduit";
   version = "0.0.2.1";
-  sha256 = "1z0d8hwjrdw8gkww9zkn9cqv3g40my952li8pm3c164d7ywswszq";
+  src = fetchgit {
+    url = git://github.com/ocharles/twitter-conduit;
+    sha256 = "0b5bfin8l71bj7gci6hhvavy1x6d1bwpjzsc19s58y7p1abalhxx";
+  };
   isLibrary = true;
   isExecutable = true;
   buildDepends = [
@@ -25,4 +29,5 @@ cabal.mkDerivation (self: {
     platforms = self.ghc.meta.platforms;
     maintainers = [ self.stdenv.lib.maintainers.ocharles ];
   };
+  doCheck = false;
 })
