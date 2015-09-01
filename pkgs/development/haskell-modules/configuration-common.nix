@@ -92,6 +92,10 @@ self: super: {
     patchPhase = "sed -i -e 's|random.*==.*|random|' -e 's|text.*>=.*,|text,|' -e s'|terminfo == .*|terminfo|' darcs.cabal";
   });
 
+  stripe = overrideCabal super.stripe (drv: {
+    patchPhase = "sed -i -e 's|) where|, charge) where|' src/Web/Stripe/Charge.hs";
+  });
+
   # The test suite imposes too narrow restrictions on the version of
   # Cabal that can be used to build this package.
   cabal-test-quickcheck = dontCheck super.cabal-test-quickcheck;
