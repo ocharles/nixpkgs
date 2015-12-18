@@ -15777,6 +15777,12 @@ let
 
   mg = callPackage ../applications/editors/mg { };
 
+  bgfx = callPackage ../development/libraries/bgfx {};
+
+  bx = callPackage ../development/libraries/bx {};
+
+  genie = callPackage ../development/tools/build-managers/genie {};
+
 }; # self_ =
 
 
