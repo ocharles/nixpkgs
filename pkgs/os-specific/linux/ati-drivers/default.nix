@@ -39,8 +39,8 @@ stdenv.mkDerivation {
   gcc = stdenv.cc.cc;
 
   src = fetchurl {
-    url = "http://www2.ati.com/drivers/linux/amd-driver-installer-15.20.1046-x86.x86_64.zip";
-    sha256 = "ffde64203f49d9288eaa25f4d744187b6f4f14a87a444bab6a001d822b327a9d";
+    url = "http://www2.ati.com/drivers/linux/radeon-crimson-15.12-15.302-151217a-297685e.zip";
+    sha256 = "0n0ynqmjkjp5dl5q07as7ps3rlyyn63hq4mlwgd7c7v82ky2skvh";
     curlOpts = "--referer http://support.amd.com/en-us/download/desktop?os=Linux%20x86_64";
   };
 
@@ -68,6 +68,7 @@ stdenv.mkDerivation {
       "${xorg.libXext}/lib"
       "${xorg.libX11}/lib"
       "${xorg.libXinerama}/lib"
+      "${xorg.libXext}/lib"
     ];
 
   # without this some applications like blender don't start, but they start

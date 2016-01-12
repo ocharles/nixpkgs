@@ -7,11 +7,8 @@ set -x
 die(){ echo $@; exit 1; }
 
 # custom unpack:
-mkdir fglrx
-cd fglrx
 unzip $src
-cd ..
-run_file=$(echo fglrx/amd-driver-installer-*)
+run_file=$(echo fglrx*/amd-driver-installer-*)
 sh $run_file --extract .
 
 eval "$patchPhase"
@@ -226,8 +223,14 @@ fi
   fi
 
   # libstdc++ and gcc are needed by some libs
+  echo $gcc
+  patchelf --remove-needed libX11.so.6 $out/lib/dri/fglrx_dri.so
+  patchelf --remove-needed libXext.so.6 $out/lib/dri/fglrx_dri.so
+  patchelf --remove-needed libX11.so.6 $out/lib/fglrx_dri.so
   patchelf --set-rpath $gcc/$lib_arch $out/lib/libatiadlxx.so
   patchelf --set-rpath $gcc/$lib_arch $out/lib/xorg/modules/glesx.so
+  patchelf --set-rpath $gcc/$lib_arch/ $out/lib/dri/fglrx_dri.so
+  patchelf --set-rpath $gcc/$lib_arch/ $out/lib/libaticaldd.so
 }
 
 if test -z "$libsOnly"; then
@@ -241,14 +244,14 @@ if test -z "$libsOnly"; then
 
   eval "$patchPhaseSamples"
 
-  ( # build and install fgl_glxgears
-    cd fgl_glxgears; 
-    gcc -DGL_ARB_texture_multisample=1 -g \
-    -I$mesa/include \
-    -I$out/include \
-    -L$mesa/lib -lGL -lGLU -lX11 -lm \
-    -o $out/bin/fgl_glxgears -Wall  fgl_glxgears.c
-  )
+  # ( # build and install fgl_glxgears
+  #   cd fgl_glxgears;
+  #   gcc -DGL_ARB_texture_multisample=1 -g \
+  #   -I$mesa/include \
+  #   -I$out/include \
+  #   -L$mesa/lib -lGL -lGLU -lX11 -lm \
+  #   -o $out/bin/fgl_glxgears -Wall  fgl_glxgears.c
+  # )
 
   true || ( # build and install
 
@@ -260,7 +263,7 @@ if test -z "$libsOnly"; then
 	    -I${xf86vidmodeproto}/include \
 	    -I$out/X11R6/include \
 	    -L$out/lib \
-	    -Wall -lm -lfglrx_gamma -lX11 -lXext -o fglrx_xgamma fglrx_xgamma.c 
+	    -Wall -lm -lfglrx_gamma -lX11 -lXext -o fglrx_xgamma fglrx_xgamma.c
   )
 
   { # copy binaries and wrap them:
