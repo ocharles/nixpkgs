@@ -8,11 +8,11 @@ assert xineramaSupport -> xlibs.libXinerama != null;
 assert cupsSupport -> cups != null;
 
 stdenv.mkDerivation rec {
-  name = "gtk+-2.24.22";
+  name = "gtk+-2.24.25";
 
   src = fetchurl {
     url = "mirror://gnome/sources/gtk+/2.24/${name}.tar.xz";
-    sha256 = "0zxf810znlk80j230rbr0xscx3gm71jmf2bdiamg76rqzglvc55i";
+    sha256 = "38af1020cb8ff3d10dda2c8807f11e92af9d2fa4045de61c62eedb7fbc7ea5b3";
   };
 
   enableParallelBuilding = true;
@@ -23,16 +23,26 @@ stdenv.mkDerivation rec {
 
   propagatedBuildInputs = with xlibs; with stdenv.lib;
     [ glib cairo pango gdk_pixbuf atk ]
-    ++ optionals stdenv.isLinux
-      [ libXrandr libXrender libXcomposite libXi libXcursor ]
-    ++ optional stdenv.isDarwin x11
+    ++ optionals (stdenv.isLinux || stdenv.isDarwin) [
+         libXrandr libXrender libXcomposite libXi libXcursor
+       ]
+    ++ optionals stdenv.isDarwin [ x11 libXdamage ]
     ++ libintlOrEmpty
     ++ optional xineramaSupport libXinerama
     ++ optionals cupsSupport [ cups ];
 
-  configureFlags = "--with-xinput=yes";
+  configureFlags = if stdenv.isDarwin
+    then "--disable-glibtest --disable-introspection --disable-visibility"
+    else "--with-xinput=yes";
 
   postInstall = "rm -rf $out/share/gtk-doc";
+
+  passthru = {
+    gtkExeEnvPostBuild = ''
+      rm $out/lib/gtk-2.0/2.10.0/immodules.cache
+      $out/bin/gtk-query-immodules-2.0 $out/lib/gtk-2.0/2.10.0/immodules/*.so > $out/lib/gtk-2.0/2.10.0/immodules.cache
+    ''; # workaround for bug of nix-mode for Emacs */ '';
+  };
 
   meta = with stdenv.lib; {
     description = "A multi-platform toolkit for creating graphical user interfaces";

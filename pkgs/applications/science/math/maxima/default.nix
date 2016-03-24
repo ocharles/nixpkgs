@@ -2,7 +2,7 @@
 
 let
   name    = "maxima";
-  version = "5.32.1";
+  version = "5.35.1";
 
   searchPath =
     stdenv.lib.makeSearchPath "bin"
@@ -13,7 +13,7 @@ stdenv.mkDerivation {
 
   src = fetchurl {
     url = "mirror://sourceforge/${name}/${name}-${version}.tar.gz";
-    sha256 = "0krxha1jckgw5s52bjasf7bnkcnq81qyi2k1bcglgqzfp79b44gw";
+    sha256 = "1wwqvay9z6gal7bsyyyhhcwh0fy5ak4h2a446ali0x6zmybaklcy";
   };
 
   buildInputs = [sbcl texinfo perl makeWrapper];
@@ -29,18 +29,17 @@ stdenv.mkDerivation {
     ln -s ../maxima/${version}/doc $out/share/doc/maxima
   '';
 
-  # Failures in the regression test suite are not going to abort the
-  # build process. We run the suite mostly so that potential errors show
-  # up in the build log. See also:
-  # <http://sourceforge.net/tracker/?func=detail&aid=3365831&group_id=4933&atid=104933>.
+  # Failures in the regression test suite won't abort the build process. We run
+  # the suite only so that potential errors show up in the build log. See also:
+  # http://sourceforge.net/tracker/?func=detail&aid=3365831&group_id=4933&atid=104933.
   doCheck = true;
 
   enableParallelBuilding = true;
 
   meta = {
-    description = "Maxima computer algebra system";
+    description = "Computer algebra system";
     homepage = "http://maxima.sourceforge.net";
-    license = "GPLv2";
+    license = stdenv.lib.licenses.gpl2;
 
     longDescription = ''
       Maxima is a fairly complete computer algebra system written in

@@ -1,20 +1,19 @@
-{ stdenv, fetchurl, libextractor, libmicrohttpd, libgcrypt
-, zlib, gmp, curl, libtool, adns, sqlite, pkgconfig
-, libxml2, ncurses, gettext, libunistring, libidn
-, makeWrapper }:
+{ stdenv, fetchurl, adns, curl, gettext, gmp, gnutls, libextractor
+, libgcrypt, libgnurl, libidn, libmicrohttpd, libtool, libunistring
+, makeWrapper, ncurses, pkgconfig, libxml2, sqlite, zlib }:
 
 stdenv.mkDerivation rec {
-  name = "gnunet-0.10.0";
+  name = "gnunet-0.10.1";
 
   src = fetchurl {
     url = "mirror://gnu/gnunet/${name}.tar.gz";
-    sha256 = "0zqpc47kywhjrpphl0palz849khv00ra2gjrfkysp6p0gfsbvd0i";
+    sha256 = "04wxzm3wkgqbn42b8ksr4cx6m5cckyig5cls1adh0nwdczwvnp7n";
   };
 
   buildInputs = [
-    libextractor libmicrohttpd libgcrypt gmp curl libtool
-    zlib adns sqlite libxml2 ncurses libidn
-    pkgconfig gettext libunistring makeWrapper
+    adns curl gettext gmp gnutls libextractor libgcrypt libgnurl libidn
+    libmicrohttpd libtool libunistring libxml2 makeWrapper ncurses
+    pkgconfig sqlite zlib
   ];
 
   preConfigure = ''
@@ -55,7 +54,7 @@ stdenv.mkDerivation rec {
   */
 
   meta = {
-    description = "GNUnet, GNU's decentralized anonymous and censorship-resistant P2P framework";
+    description = "GNU's decentralized anonymous and censorship-resistant P2P framework";
 
     longDescription = ''
       GNUnet is a framework for secure peer-to-peer networking that
@@ -74,9 +73,9 @@ stdenv.mkDerivation rec {
 
     homepage = http://gnunet.org/;
 
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
 
-    maintainers = with stdenv.lib.maintainers; [ ludo viric ];
+    maintainers = with stdenv.lib.maintainers; [ viric ];
     platforms = stdenv.lib.platforms.gnu;
   };
 }

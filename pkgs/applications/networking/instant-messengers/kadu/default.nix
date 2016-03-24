@@ -3,17 +3,21 @@
 
 stdenv.mkDerivation {
 
-  name = "kadu-0.12.2";
+  name = "kadu-0.12.3";
 
   src = fetchurl {
-    url = http://download.kadu.im/stable/kadu-0.12.2.tar.bz2;
-    sha256 = "0rqhkiyn8c7jigpxmvwh7daxsgjxlvd16zjdss1azdzd9x2dbym1";
+    url = http://download.kadu.im/stable/kadu-0.12.3.tar.bz2;
+    sha256 = "1a5q5b8pm253cwg6ahahjdm8jxj0pv41apyi1nvvy08bs38bn1yn";
   };
 
   buildInputs = [ cmake qt4 libgadu libXScrnSaver libsndfile libX11 alsaLib aspell libidn qca2 phonon pkgconfig
   ];
 
   configureFlags = "CPPFLAGS=-DQT_NO_DEBUG";
+
+  preConfigure = ''
+    export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:${phonon}/lib64/pkgconfig:${phonon}/lib32/pkgconfig"
+  '';
 
   cmakeFlags = "-DENABLE_AUTODOWNLOAD=OFF -DBUILD_DESCRIPTION='NixOS' -DCMAKE_BUILD_TYPE=Release";
 
@@ -26,6 +30,7 @@ stdenv.mkDerivation {
     sed -i -e '/mpd_mediaplayer/d' \
            -e '/encryption_ng/d'   \
            -e '/encryption_ng_simlite/d' Plugins.cmake
+    patch -p1 < ${./cmake.patch}
   '';
 
   NIX_LDFLAGS="-lX11";
@@ -33,7 +38,7 @@ stdenv.mkDerivation {
   meta = {
     description = "An instant-messenger client for the gadu-gadu network (most popular polish IM network)";
     homepage = http://www.kadu.net/w/English:Main_Page;
-    license = "GPLv2";
+    license = stdenv.lib.licenses.gpl2;
     platforms = stdenv.lib.platforms.linux;
     maintainers = [ stdenv.lib.maintainers.piotr ];
   };

@@ -1,44 +1,56 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, pkgs_i686, ... }:
 
-with pkgs.lib;
 with pkgs;
+with lib;
 
 let
 
   cfg = config.hardware.pulseaudio;
 
-  uid = config.ids.uids.pulseaudio;
-  gid = config.ids.gids.pulseaudio;
+  systemWide = cfg.enable && cfg.systemWide;
+  nonSystemWide = cfg.enable && !cfg.systemWide;
 
-  pulseRuntimePath = "/var/run/pulse";
+  # Forces 32bit pulseaudio and alsaPlugins to be built/supported for apps
+  # using 32bit alsa on 64bit linux.
+  enable32BitAlsaPlugins = stdenv.isx86_64 && (pkgs_i686.alsaLib != null && pkgs_i686.pulseaudio != null);
+
+  ids = config.ids;
+
+  uid = ids.uids.pulseaudio;
+  gid = ids.gids.pulseaudio;
+
+  stateDir = "/var/run/pulse";
 
   # Create pulse/client.conf even if PulseAudio is disabled so
   # that we can disable the autospawn feature in programs that
   # are built with PulseAudio support (like KDE).
   clientConf = writeText "client.conf" ''
-    autospawn=${if (cfg.enable && !cfg.systemWide) then "yes" else "no"}
-    ${optionalString (cfg.enable && !cfg.systemWide)
-      "daemon-binary=${cfg.package}/bin/pulseaudio"}
+    autospawn=${if nonSystemWide then "yes" else "no"}
+    ${optionalString nonSystemWide "daemon-binary=${cfg.package}/bin/pulseaudio"}
   '';
 
   # Write an /etc/asound.conf that causes all ALSA applications to
   # be re-routed to the PulseAudio server through ALSA's Pulse
   # plugin.
-  alsaConf = writeText "asound.conf" ''
+  alsaConf = writeText "asound.conf" (''
     pcm_type.pulse {
-      lib ${alsaPlugins}/lib/alsa-lib/libasound_module_pcm_pulse.so
+      libs.native = ${pkgs.alsaPlugins}/lib/alsa-lib/libasound_module_pcm_pulse.so ;
+      ${lib.optionalString enable32BitAlsaPlugins
+     "libs.32Bit = ${pkgs_i686.alsaPlugins}/lib/alsa-lib/libasound_module_pcm_pulse.so ;"}
     }
     pcm.!default {
       type pulse
       hint.description "Default Audio Device (via PulseAudio)"
     }
     ctl_type.pulse {
-      lib ${alsaPlugins}/lib/alsa-lib/libasound_module_ctl_pulse.so
+      libs.native = ${alsaPlugins}/lib/alsa-lib/libasound_module_ctl_pulse.so ;
+      ${lib.optionalString enable32BitAlsaPlugins
+     "libs.32Bit = ${pkgs_i686.alsaPlugins}/lib/alsa-lib/libasound_module_ctl_pulse.so ;"}
     }
     ctl.!default {
       type pulse
     }
-  '';
+  '');
 
 in {
 
@@ -67,8 +79,7 @@ in {
       };
 
       configFile = mkOption {
-        type = types.uniq types.path;
-        default = "${pulseaudio}/etc/pulse/default.pa";
+        type = types.path;
         description = ''
           The path to the configuration the PulseAudio server
           should use. By default, the "default.pa" configuration
@@ -77,14 +88,25 @@ in {
       };
 
       package = mkOption {
-        type = types.path;
-        default = pulseaudio;
-        example = literalExample "pulseaudio.override { jackaudioSupport = true; }";
+        type = types.package;
+        default = pulseaudioFull;
+        example = literalExample "pkgs.pulseaudioFull";
         description = ''
-          The PulseAudio derivation to use.  This can be used to enable
-          features (such as JACK support) that are not enabled in the
-          default PulseAudio in Nixpkgs.
+          The PulseAudio derivation to use.  This can be used to disable
+          features (such as JACK support, Bluetooth) that are enabled in the
+          pulseaudioFull package in Nixpkgs.
         '';
+      };
+
+      daemon = {
+        logLevel = mkOption {
+          type = types.str;
+          default = "notice";
+          description = ''
+            The log level that the system-wide pulseaudio daemon should use,
+            if activated.
+          '';
+        };
       };
     };
 
@@ -97,10 +119,14 @@ in {
         target = "pulse/client.conf";
         source = clientConf;
       };
+
+      hardware.pulseaudio.configFile = mkDefault "${cfg.package}/etc/pulse/default.pa";
     }
 
     (mkIf cfg.enable {
-      environment.systemPackages = [ cfg.package ];
+      environment.systemPackages = [
+        cfg.package
+      ] ++ lib.optionals enable32BitAlsaPlugins [ pkgs_i686.pulseaudio ];
 
       environment.etc = singleton {
         target = "asound.conf";
@@ -111,21 +137,22 @@ in {
       security.rtkit.enable = true;
     })
 
-    (mkIf (cfg.enable && !cfg.systemWide) {
+    (mkIf nonSystemWide {
       environment.etc = singleton {
         target = "pulse/default.pa";
         source = cfg.configFile;
       };
     })
 
-    (mkIf (cfg.enable && cfg.systemWide) {
+    (mkIf systemWide {
       users.extraUsers.pulse = {
         # For some reason, PulseAudio wants UID == GID.
         uid = assert uid == gid; uid;
         group = "pulse";
         extraGroups = [ "audio" ];
         description = "PulseAudio system service user";
-        home = pulseRuntimePath;
+        home = stateDir;
+        createHome = true;
       };
 
       users.extraGroups.pulse.gid = gid;
@@ -134,15 +161,11 @@ in {
         description = "PulseAudio System-Wide Server";
         wantedBy = [ "sound.target" ];
         before = [ "sound.target" ];
-        path = [ cfg.package ];
-        environment.PULSE_RUNTIME_PATH = pulseRuntimePath;
-        preStart = ''
-          mkdir -p --mode 755 ${pulseRuntimePath}
-          chown -R pulse:pulse ${pulseRuntimePath}
-        '';
-        script = ''
-          exec pulseaudio --system -n --file="${cfg.configFile}"
-        '';
+        environment.PULSE_RUNTIME_PATH = stateDir;
+        serviceConfig = {
+          ExecStart = "${cfg.package}/bin/pulseaudio -D --log-level=${cfg.daemon.logLevel} --system --use-pid-file -n --file=${cfg.configFile}";
+          PIDFile = "${stateDir}/pid";
+        };
       };
     })
   ];

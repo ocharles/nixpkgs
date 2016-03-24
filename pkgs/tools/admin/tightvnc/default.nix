@@ -10,15 +10,15 @@ stdenv.mkDerivation {
 
   # for the builder script
   inherit xauth fontDirectories perl;
-  gcc = stdenv.gcc.gcc;
+  gcc = stdenv.cc.gcc;
 
   buildInputs = [x11 zlib libjpeg imake gccmakedep libXmu libXaw libXpm libXp xauth];
   builder = ./builder.sh;
 
   meta = {
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
     homepage = "http://vnc-tight.sourceforge.net/";
-    description = "TightVNC is an improved version of VNC";
+    description = "Improved version of VNC";
 
     longDescription = ''
       TightVNC is an improved version of VNC, the great free

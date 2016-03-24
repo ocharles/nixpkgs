@@ -3,9 +3,9 @@
 # has additional options that affect the web server as a whole, like
 # the user/group to run under.)
 
-{ forMainServer, pkgs }:
+{ forMainServer, lib }:
 
-with pkgs.lib;
+with lib;
 
 {
 
@@ -142,9 +142,19 @@ with pkgs.lib;
     type = types.str;
     default = "common";
     example = "combined";
-    description = "
+    description = ''
       Log format for Apache's log files. Possible values are: combined, common, referer, agent.
-    ";
+    '';
+  };
+
+  robotsEntries = mkOption {
+    type = types.lines;
+    default = "";
+    example = "Disallow: /foo/";
+    description = ''
+      Specification of pages to be ignored by web crawlers. See <link
+      xlink:href='http://www.robotstxt.org/'/> for details.
+    '';
   };
 
 }

@@ -1,8 +1,8 @@
 # Global configuration for the SSH client.
 
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 let cfg  = config.programs.ssh;
     cfgd = config.services.openssh;
@@ -31,7 +31,7 @@ in
 
       setXAuthLocation = mkOption {
         type = types.bool;
-        default = true;
+        default = config.services.xserver.enable;
         description = ''
           Whether to set the path to <command>xauth</command> for X11-forwarded connections.
           This causes a dependency on X11 packages.
@@ -47,7 +47,36 @@ in
           for help.
         '';
       };
+
+      startAgent = mkOption {
+        type = types.bool;
+        default = true;
+        description = ''
+          Whether to start the OpenSSH agent when you log in.  The OpenSSH agent
+          remembers private keys for you so that you don't have to type in
+          passphrases every time you make an SSH connection.  Use
+          <command>ssh-add</command> to add a key to the agent.
+        '';
+      };
+
+      agentTimeout = mkOption {
+        type = types.nullOr types.string;
+        default = null;
+        example = "1h";
+        description = ''
+          How long to keep the private keys in memory. Use null to keep them forever.
+        '';
+      };
+
+      package = mkOption {
+        default = pkgs.openssh;
+        description = ''
+          The package used for the openssh client and daemon.
+        '';
+      };
+
     };
+
   };
 
   config = {
@@ -71,5 +100,31 @@ in
           target = "ssh/ssh_config";
         }
       ];
+
+    # FIXME: this should really be socket-activated for über-awesomeness.
+    systemd.user.services.ssh-agent =
+      { enable = cfg.startAgent;
+        description = "SSH Agent";
+        wantedBy = [ "default.target" ];
+        serviceConfig =
+          { ExecStartPre = "${pkgs.coreutils}/bin/rm -f %t/ssh-agent";
+            ExecStart =
+                "${cfg.package}/bin/ssh-agent " +
+                optionalString (cfg.agentTimeout != null) ("-t ${cfg.agentTimeout} ") +
+                "-a %t/ssh-agent";
+            StandardOutput = "null";
+            Type = "forking";
+            Restart = "on-failure";
+            SuccessExitStatus = "0 2";
+          };
+      };
+
+    environment.extraInit = optionalString cfg.startAgent
+      ''
+        if [ -z "$SSH_AUTH_SOCK" -a -n "$XDG_RUNTIME_DIR" ]; then
+          export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent"
+        fi
+      '';
+
   };
 }

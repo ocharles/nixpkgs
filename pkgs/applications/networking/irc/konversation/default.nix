@@ -3,7 +3,7 @@
 
 let
   pn = "konversation";
-  v = "1.4";
+  v = "1.5.1";
 in
 
 stdenv.mkDerivation rec {
@@ -11,7 +11,7 @@ stdenv.mkDerivation rec {
 
   src = fetchurl {
     url = "mirror://kde/stable/${pn}/${v}/src/${name}.tar.xz";
-    sha256 = "030vsbb18dlzsnjl3fzyd1m9wvvksiyc1lm45abi4q6x4xd60knv";
+    sha256 = "11hrjrq4r6v1v14ybx9llgzmrl3a45z26n292nb0q887rg1qv0wp";
   };
 
   buildInputs = [ cmake qt4 perl gettext libXScrnSaver kdelibs kdepimlibs
@@ -19,6 +19,7 @@ stdenv.mkDerivation rec {
 
   meta = with stdenv.lib; {
     description = "Integrated IRC client for KDE";
+    repositories.git = git://anongit.kde.org/konversation;
     license = "GPL";
     inherit (kdelibs.meta) maintainers platforms;
   };

@@ -2,12 +2,13 @@
   openvpn, vpnc, glib, dbus, iptables, gnutls, policykit, polkit,
   wpa_supplicant, readline6, pptp, ppp, tree }:
 
-stdenv.mkDerivation {
-  name = "connman-1.20";
+stdenv.mkDerivation rec {
+  name = "connman-${version}";
+  version = "1.26";
   src = fetchgit {
     url = "git://git.kernel.org/pub/scm/network/connman/connman.git";
-    rev = "8047f3d051b32d38ac0b1e78296b482368728ec6";
-    sha256 = "0hb03rzrspgry8z43x8x76vlq1hdq2wggkk7wbidavnqhpmz7dxz";
+    rev = "refs/tags/${version}";
+    sha256 = "0pj404iyq6x9x4i2dwqk1dx95yglx7pvkm8cvh13bf50dim92cv9";
   };
 
   buildInputs = [ autoconf automake libtool pkgconfig openconnect polkit
@@ -49,7 +50,7 @@ stdenv.mkDerivation {
   '';
 
   meta = {
-    description = "The ConnMan project provides a daemon for managing internet connections";
+    description = "Provides a daemon for managing internet connections";
     homepage = "https://connman.net/";
     maintainers = [ stdenv.lib.maintainers.matejc ];
     # tested only on linux, might work on others also

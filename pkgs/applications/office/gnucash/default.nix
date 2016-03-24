@@ -1,7 +1,7 @@
 { fetchurl, stdenv, pkgconfig, libxml2, gconf, glib, gtk, libgnomeui, libofx
 , libgtkhtml, gtkhtml, libgnomeprint, goffice, enchant, gettext, libbonoboui
 , intltool, perl, guile, slibGuile, swig, isocodes, bzip2, makeWrapper, libglade
-, libgsf, libart_lgpl, perlPackages
+, libgsf, libart_lgpl, perlPackages, aqbanking, gwenhywfar
 }:
 
 /* If you experience GConf errors when running GnuCash on NixOS, see
@@ -21,10 +21,10 @@ stdenv.mkDerivation rec {
     pkgconfig libxml2 gconf glib gtk libgnomeui libgtkhtml gtkhtml
     libgnomeprint goffice enchant gettext intltool perl guile slibGuile
     swig isocodes bzip2 makeWrapper libofx libglade libgsf libart_lgpl
-    perlPackages.DateManip perlPackages.FinanceQuote
+    perlPackages.DateManip perlPackages.FinanceQuote aqbanking gwenhywfar
   ];
 
-  configureFlags = "CFLAGS=-O3 CXXFLAGS=-O3 --disable-dbi --enable-ofx";
+  configureFlags = "CFLAGS=-O3 CXXFLAGS=-O3 --disable-dbi --enable-ofx --enable-aqbanking";
 
   postInstall = ''
     # Auto-updaters don't make sense in Nix.
@@ -47,6 +47,8 @@ stdenv.mkDerivation rec {
         --set GCONF_CONFIG_SOURCE 'xml::~/.gconf'                       \
         --prefix PATH ":" "$out/bin:${perl}/bin:${gconf}/bin"
     done
+
+    rm $out/share/icons/hicolor/icon-theme.cache
   '';
 
   # The following settings fix failures in the test suite. It's not required otherwise.
@@ -57,7 +59,7 @@ stdenv.mkDerivation rec {
   enableParallelBuilding = true;
 
   meta = {
-    description = "GnuCash, a personal and small-business financial-accounting application";
+    description = "Personal and small-business financial-accounting application";
 
     longDescription = ''
       GnuCash is personal and small-business financial-accounting software,
@@ -70,7 +72,7 @@ stdenv.mkDerivation rec {
       accounting principles to ensure balanced books and accurate reports.
     '';
 
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
 
     homepage = http://www.gnucash.org/;
 

@@ -5,16 +5,18 @@
 }:
 
 stdenv.mkDerivation rec {
-  name = "nix-1.7pre3319_f4013b6";
+  name = "nix-1.9pre4020_f6716e9";
 
   src = fetchurl {
-    url = "http://hydra.nixos.org/build/7848540/download/5/${name}.tar.xz";
-    sha256 = "0f9095aabe3399436a75162c046fdc1e4d0c1e9a98f7d8ffcd3d910b19c8c265";
+    url = "http://hydra.nixos.org/build/18780017/download/4/${name}.tar.xz";
+    sha256 = "0jki14yxwv1f33fqkd1bi8bpxafkzjv8yixiwnw8nkhx074sipsn";
   };
 
   nativeBuildInputs = [ perl pkgconfig ];
 
-  buildInputs = [ curl openssl boehmgc sqlite ];
+  buildInputs = [ curl openssl sqlite ];
+
+  propagatedBuildInputs = [ boehmgc ];
 
   # Note: bzip2 is not passed as a build input, because the unpack phase
   # would end up using the wrong bzip2 when cross-compiling.
@@ -22,6 +24,7 @@ stdenv.mkDerivation rec {
   postUnpack =
     '' export CPATH="${bzip2}/include"
        export LIBRARY_PATH="${bzip2}/lib"
+       export CXXFLAGS="-Wno-error=reserved-user-defined-literal"
     '';
 
   configureFlags =
@@ -32,7 +35,6 @@ stdenv.mkDerivation rec {
       --with-www-curl=${perlPackages.WWWCurl}/${perl.libPrefix}
       --disable-init-state
       --enable-gc
-      CFLAGS=-O3 CXXFLAGS=-O3
     '';
 
   makeFlags = "profiledir=$(out)/etc/profile.d";
@@ -55,7 +57,6 @@ stdenv.mkDerivation rec {
         --with-www-curl=${perlPackages.WWWCurl}/${perl.libPrefix}
         --disable-init-state
         --enable-gc
-        CFLAGS=-O3 CXXFLAGS=-O3
       '' + stdenv.lib.optionalString (
           stdenv.cross ? nix && stdenv.cross.nix ? system
       ) ''--with-system=${stdenv.cross.nix.system}'';
@@ -68,7 +69,7 @@ stdenv.mkDerivation rec {
   meta = {
     description = "The Nix Deployment System";
     homepage = http://nixos.org/;
-    license = "LGPLv2+";
+    license = stdenv.lib.licenses.lgpl2Plus;
     maintainers = [ stdenv.lib.maintainers.eelco ];
     platforms = stdenv.lib.platforms.all;
   };

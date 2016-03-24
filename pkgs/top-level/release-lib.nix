@@ -1,9 +1,9 @@
-{ supportedSystems }:
+{ supportedSystems, packageSet ? (import ./all-packages.nix) }:
 
 rec {
 
   # Ensure that we don't build packages marked as unfree.
-  allPackages = args: import ./all-packages.nix (args // {
+  allPackages = args: packageSet (args // {
     config.allowUnfree = false;
   });
 
@@ -36,15 +36,8 @@ rec {
   crossMaintainers = with pkgs.lib.maintainers; [ viric ];
 
 
-  /* Set the Hydra scheduling priority for a job.  The default
-     priority (10) should be used for most jobs.  A different priority
-     should only be used for a few particularly interesting jobs (in
-     terms of giving feedback to developers), such as stdenv. */
-  prio = level: job: toJob job // { schedulingPriority = level; };
-
-
   toJob = x: if builtins.isAttrs x then x else
-    { type = "job"; systems = x; schedulingPriority = 10; };
+    { type = "job"; systems = x; };
 
 
   /* Build a package on the given set of platforms.  The function `f'
@@ -69,13 +62,11 @@ rec {
   /* Map an attribute of the form `foo = [platforms...]'  to `testOn
      [platforms...] (pkgs: pkgs.foo)'. */
   mapTestOn = pkgs.lib.mapAttrsRecursiveCond
-    (as: !(as ? type && as.type == "job"))
+    (as: as.type or "" != "job")
     (path: value:
       let
         job = toJob value;
-        getPkg = pkgs:
-          pkgs.lib.addMetaAttrs { schedulingPriority = toString job.schedulingPriority; }
-          (pkgs.lib.getAttrFromPath path pkgs);
+        getPkg = pkgs: pkgs.lib.getAttrFromPath path pkgs;
       in testOn job.systems getPkg);
 
 
@@ -83,15 +74,12 @@ rec {
    * parameter for allPackages, defining the target platform for cross builds,
    * and triggering the build of the host derivation (cross built - crossDrv). */
   mapTestOnCross = crossSystem: pkgs.lib.mapAttrsRecursiveCond
-    (as: !(as ? type && as.type == "job"))
+    (as: as.type or "" != "job")
     (path: value:
       let
         job = toJob value;
-        getPkg = pkgs: (pkgs.lib.addMetaAttrs {
-            schedulingPriority = toString job.schedulingPriority;
-            maintainers = crossMaintainers;
-          }
-          (pkgs.lib.getAttrFromPath path pkgs));
+        getPkg = pkgs: pkgs.lib.addMetaAttrs { maintainers = crossMaintainers; }
+          (pkgs.lib.getAttrFromPath path pkgs);
       in testOnCross crossSystem job.systems getPkg);
 
 
@@ -123,6 +111,8 @@ rec {
       packagesWithMetaPlatform attrSet
     else if attrSet.recurseForRelease or false then
       packagesWithMetaPlatform attrSet
+    else if attrSet.meta.broken or false then
+      []
     else
       attrSet.meta.hydraPlatforms or (attrSet.meta.platforms or []);
 

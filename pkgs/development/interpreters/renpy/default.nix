@@ -1,25 +1,25 @@
-{ stdenv, fetchurl, python, pkgconfig, wrapPython
+{ stdenv, fetchurl, python, cython, pkgconfig, wrapPython
 , pygame, SDL, libpng, ffmpeg, freetype, glew, mesa, fribidi, zlib
 }:
 
 stdenv.mkDerivation {
-  name = "renpy-6.16.3";
+  name = "renpy-6.17.6";
 
   meta = {
     description = "Ren'Py Visual Novel Engine";
     homepage = "http://renpy.org/";
-    license = "MIT";
+    license = stdenv.lib.licenses.mit;
     platforms = stdenv.lib.platforms.linux;
     maintainers = with stdenv.lib.maintainers; [ iyzsong ];
   };
 
   src = fetchurl {
-    url = "http://www.renpy.org/dl/6.16.3/renpy-6.16.3-source.tar.bz2";
-    sha256 = "0yd7wj85kp0hlaqlrhl40irhkmcng89vcxypyx40pqmk87gjagqn";
+    url = "http://www.renpy.org/dl/6.17.6/renpy-6.17.6-source.tar.bz2";
+    sha256 = "0rkynw9cnr1zqdinz037d9zig6grhp2ca2pyxk80vhdpjb0xrkic";
   };
 
   buildInputs = [
-    python pkgconfig wrapPython
+    python cython pkgconfig wrapPython
     SDL libpng ffmpeg freetype glew mesa fribidi zlib pygame
   ];
 

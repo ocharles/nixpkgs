@@ -1,5 +1,5 @@
 { stdenv, fetchurl, pkgconfig, glib, expat, pam, intltool, spidermonkey
-, gobjectIntrospection, libxslt, docbook_xsl
+, gobjectIntrospection, libxslt, docbook_xsl, docbook_xml_dtd_412
 , useSystemd ? stdenv.isLinux, systemd }:
 
 let
@@ -24,7 +24,7 @@ stdenv.mkDerivation rec {
 
   buildInputs =
     [ pkgconfig glib expat pam intltool spidermonkey gobjectIntrospection ]
-    ++ [ libxslt docbook_xsl ] # man pages
+    ++ [ libxslt docbook_xsl docbook_xml_dtd_412 ] # man pages
     ++ stdenv.lib.optional useSystemd systemd;
 
   # Ugly hack to overwrite hardcoded directories
@@ -53,13 +53,16 @@ stdenv.mkDerivation rec {
     "--with-systemdsystemunitdir=$(out)/etc/systemd/system"
     "--with-polkitd-user=polkituser" #TODO? <nixos> config.ids.uids.polkituser
     "--with-os-type=NixOS" # not recognized but prevents impurities on non-NixOS
+    "--enable-introspection"
   ];
 
-  makeFlags =
-    ''
-      INTROSPECTION_GIRDIR=$(out)/share/gir-1.0
-      INTROSPECTION_TYPELIBDIR=$(out)lib/girepository-1.0
-    '';
+  makeFlags = "INTROSPECTION_GIRDIR=$(out)/share/gir-1.0 INTROSPECTION_TYPELIBDIR=$(out)/lib/girepository-1.0";
+
+  # The following is required on grsecurity/PaX due to spidermonkey's JIT
+  postBuild = ''
+    paxmark mr src/polkitbackend/.libs/polkitd
+    paxmark mr test/polkitbackend/.libs/polkitbackendjsauthoritytest
+  '';
 
   #doCheck = true; # some /bin/bash problem that isn't auto-solved by patchShebangs
 

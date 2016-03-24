@@ -1,12 +1,23 @@
-{ stdenv, fetchurl, ncurses, x11 }:
+let
+  safeX11 = stdenv: !(stdenv.isArm || stdenv.isMips);
+in
+
+{ stdenv, fetchurl, ncurses, buildEnv, libX11, xproto, useX11 ? safeX11 stdenv }:
+
+if useX11 && !(safeX11 stdenv)
+  then throw "x11 not available in ocaml with arm or mips arch"
+  else # let the indentation flow
 
 let
-   useX11 = !stdenv.isArm && !stdenv.isMips;
    useNativeCompilers = !stdenv.isMips;
    inherit (stdenv.lib) optionals optionalString;
 in
 
 stdenv.mkDerivation rec {
+
+  x11env = buildEnv { name = "x11env"; paths = [libX11 xproto]; };
+  x11lib = x11env + "/lib";
+  x11inc = x11env + "/include";
 
   name = "ocaml-4.01.0";
 
@@ -15,10 +26,14 @@ stdenv.mkDerivation rec {
     sha256 = "b1ca708994180236917ae79e17606da5bd334ca6acd6873a550027e1c0ec874a";
   };
 
+  patches = [ ./fix-clang-build-on-osx.diff ];
+
   prefixKey = "-prefix ";
-  configureFlags = ["-no-tk"] ++ optionals useX11 [ "-x11lib" x11 ];
+  configureFlags = ["-no-tk"] ++ optionals useX11 [ "-x11lib" x11lib
+                                                    "-x11include" x11inc ];
+
   buildFlags = "world" + optionalString useNativeCompilers " bootstrap world.opt";
-  buildInputs = [ncurses] ++ optionals useX11 [ x11 ];
+  buildInputs = [ncurses] ++ optionals useX11 [ libX11 xproto ];
   installTargets = "install" + optionalString useNativeCompilers " installopt";
   preConfigure = ''
     CAT=$(type -tp cat)
@@ -35,8 +50,9 @@ stdenv.mkDerivation rec {
 
   meta = {
     homepage = http://caml.inria.fr/ocaml;
-    licenses = [ "QPL" /* compiler */ "LGPLv2" /* library */ ];
-    description = "OCaml, the most popular variant of the Caml language";
+    branch = "4.01";
+    license = [ "QPL" /* compiler */ "LGPLv2" /* library */ ];
+    description = "Most popular variant of the Caml language";
 
     longDescription =
       ''

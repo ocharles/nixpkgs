@@ -2,11 +2,11 @@
 , pkgconfig, gtkmm, libxml2 }:
 
 stdenv.mkDerivation rec {
-  name = "gparted-0.15.0";
+  name = "gparted-0.19.1";
 
   src = fetchurl {
     url = "mirror://sourceforge/gparted/${name}.tar.bz2";
-    sha256 = "03s9dp2q281lkkfjgk9ahc8i6dk4d2a03z4bh2d19a7r3b2mmdww";
+    sha256 = "1x0mbks94jpzphb8hm8w0iqjrn665jkdm4qnzrvxrnvy0x3m2fwd";
   };
 
   configureFlags = "--disable-doc";
@@ -20,7 +20,7 @@ stdenv.mkDerivation rec {
   meta = {
     description = "Graphical disk partitioning tool";
     homepage = http://gparted.sourceforge.net;
-    license = "GPLv2";
+    license = stdenv.lib.licenses.gpl2;
     platforms = with stdenv.lib.platforms; linux;
   };
 }

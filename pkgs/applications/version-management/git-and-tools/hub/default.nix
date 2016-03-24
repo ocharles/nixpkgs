@@ -1,27 +1,48 @@
-{ stdenv, fetchurl, groff, rake, makeWrapper }:
+{ stdenv, fetchgit, go }:
 
 stdenv.mkDerivation rec {
   name = "hub-${version}";
-  version = "1.10.6";
+  version = "2.2.0-rc1";
 
-  src = fetchurl {
-    url = "https://github.com/github/hub/archive/v${version}.tar.gz";
-    sha256 = "0vfl1iq1927in81vd7zvp7yqqzay7pciyj87s83qfxrqyjpxn609";
+  src = fetchgit {
+    url = https://github.com/github/hub.git;
+    rev = "refs/tags/v${version}";
+    sha256 = "1f6r8vlwnmqmr85drfv24vhqx1aacz6s83c2i804v9997n0wrwfm";
   };
 
-  buildInputs = [ rake makeWrapper ];
+
+  buildInputs = [ go ];
+
+  phases = [ "unpackPhase" "buildPhase" "installPhase" ];
+
+  buildPhase = ''
+    sh script/build
+  '';
 
   installPhase = ''
-    rake install "prefix=$out"
+    mkdir -p "$out/bin"
+    cp hub "$out/bin/"
+
+    mkdir -p "$out/share/man/man1"
+    cp "man/hub.1" "$out/share/man/man1/"
+
+    mkdir -p "$out/share/zsh/site-functions"
+    cp "etc/hub.zsh_completion" "$out/share/zsh/site-functions/_hub"
+
+# Broken: https://github.com/github/hub/issues/592
+#    mkdir -p "$out/etc/bash_completion.d"
+#    cp "etc/hub.bash_completion.sh" "$out/etc/bash_completion.d/"
+
+# Should we also install provided git-hooks?
+# ?
   '';
 
-  fixupPhase = ''
-    wrapProgram $out/bin/hub --prefix PATH : ${groff}/bin
-  '';
 
-  meta = {
-    description = "A GitHub specific wrapper for git";
-    homepage = "http://defunkt.io/hub/";
-    license = stdenv.lib.licenses.mit;
+  meta = with stdenv.lib; {
+    description = "Command-line wrapper for git that makes you better at GitHub";
+
+    license = licenses.mit;
+    homepage = https://hub.github.com/;
+    maintainers = with maintainers; [ the-kenny ];
   };
 }

@@ -10,12 +10,14 @@ with stdenv.lib;
 assert sslSupport -> openssl != null;
 assert gpgSupport -> gpgme != null;
 
+let version = "3.4.1"; in
+
 stdenv.mkDerivation {
-  name = "sylpheed-3.2.0";
+  name = "sylpheed-${version}";
 
   src = fetchurl {
-    url = http://sylpheed.sraoss.jp/sylpheed/v3.2/sylpheed-3.2.0.tar.bz2;
-    sha256 = "1cdjwn1f8rgcxzfxj7j7qvacmaw4zfhnip81q4n5lj5d6rj7rssa";
+    url = "http://sylpheed.sraoss.jp/sylpheed/v3.4/sylpheed-${version}.tar.bz2";
+    sha256 = "11wpifvn8a0p4dqmvi7r61imqkgm6rjjp3h057c344vny37livbx";
   };
 
   buildInputs =
@@ -23,7 +25,8 @@ stdenv.mkDerivation {
     ++ optional sslSupport openssl
     ++ optional gpgSupport gpgme;
 
-  configureFlags = optionalString sslSupport "--enable-ssl";
+  configureFlags = optional sslSupport "--enable-ssl"
+                ++ optional gpgSupport "--enable-gpgme";
 
   meta = {
     homepage = http://sylpheed.sraoss.jp/en/;

@@ -7,9 +7,9 @@
 # the VM in the host.  On the other hand, the root filesystem is a
 # read/writable disk image persistent across VM reboots.
 
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 let
 
@@ -57,15 +57,14 @@ let
           -name ${vmName} \
           -m ${toString config.virtualisation.memorySize} \
           ${optionalString (pkgs.stdenv.system == "x86_64-linux") "-cpu kvm64"} \
-          -net nic,vlan=0,model=virtio \
-          -net user,vlan=0''${QEMU_NET_OPTS:+,$QEMU_NET_OPTS} \
+          ${concatStringsSep " " config.virtualisation.qemu.networkingOptions} \
           -virtfs local,path=/nix/store,security_model=none,mount_tag=store \
           -virtfs local,path=$TMPDIR/xchg,security_model=none,mount_tag=xchg \
           -virtfs local,path=''${SHARED_DIR:-$TMPDIR/xchg},security_model=none,mount_tag=shared \
           ${if cfg.useBootLoader then ''
             -drive index=0,id=drive1,file=$NIX_DISK_IMAGE,if=virtio,cache=writeback,werror=report \
             -drive index=1,id=drive2,file=${bootDisk}/disk.img,if=virtio,readonly \
-            -boot menu=on
+            -boot menu=on \
           '' else ''
             -drive file=$NIX_DISK_IMAGE,if=virtio,cache=writeback,werror=report \
             -kernel ${config.system.build.toplevel}/kernel \
@@ -248,12 +247,31 @@ in
         description = "Primary IP address used in /etc/hosts.";
       };
 
-    virtualisation.qemu.options =
-      mkOption {
-        default = [];
-        example = [ "-vga std" ];
-        description = "Options passed to QEMU.";
-      };
+    virtualisation.qemu = {
+      options =
+        mkOption {
+          default = [];
+          example = [ "-vga std" ];
+          description = "Options passed to QEMU.";
+        };
+
+      networkingOptions =
+        mkOption {
+          default = [
+            "-net nic,vlan=0,model=virtio"
+            "-net user,vlan=0\${QEMU_NET_OPTS:+,$QEMU_NET_OPTS}"
+          ];
+          type = types.listOf types.str;
+          description = ''
+            Networking-related command-line options that should be passed to qemu.
+            The default is to use userspace networking (slirp).
+
+            If you override this option, be advised to keep
+            ''${QEMU_NET_OPTS:+,$QEMU_NET_OPTS} (as seen in the default)
+            to keep the default runtime behaviour.
+          '';
+        };
+    };
 
     virtualisation.useBootLoader =
       mkOption {
@@ -275,12 +293,10 @@ in
 
     boot.loader.grub.device = mkVMOverride "/dev/vda";
 
-    boot.initrd.supportedFilesystems = optional cfg.writableStore "unionfs-fuse";
-
     boot.initrd.extraUtilsCommands =
       ''
         # We need mke2fs in the initrd.
-        cp ${pkgs.e2fsprogs}/sbin/mke2fs $out/bin
+        cp -vf --remove-destination ${pkgs.e2fsprogs}/sbin/mke2fs $out/bin
       '';
 
     boot.initrd.postDeviceCommands =
@@ -303,20 +319,6 @@ in
         chmod 1777 $targetRoot/tmp
 
         mkdir -p $targetRoot/boot
-        ${optionalString cfg.writableStore ''
-          mkdir -p /unionfs-chroot/ro-store
-          mount --rbind $targetRoot/nix/store /unionfs-chroot/ro-store
-
-          mkdir /unionfs-chroot/rw-store
-          ${if cfg.writableStoreUseTmpfs then ''
-          mount -t tmpfs -o "mode=755" none /unionfs-chroot/rw-store
-          '' else ''
-          mkdir $targetRoot/.nix-rw-store
-          mount --bind $targetRoot/.nix-rw-store /unionfs-chroot/rw-store
-          ''}
-
-          unionfs -o allow_other,cow,nonempty,chroot=/unionfs-chroot,max_files=32768,hide_meta_files /rw-store=RW:/ro-store=RO $targetRoot/nix/store
-        ''}
       '';
 
     # After booting, register the closure of the paths in
@@ -343,12 +345,13 @@ in
     # configuration, where the regular value for the `fileSystems'
     # attribute should be disregarded for the purpose of building a VM
     # test image (since those filesystems don't exist in the VM).
-    fileSystems = mkVMOverride
+    fileSystems = mkVMOverride (
       { "/".device = "/dev/vda";
-        "/nix/store" =
+        ${if cfg.writableStore then "/nix/.ro-store" else "/nix/store"} =
           { device = "store";
             fsType = "9p";
             options = "trans=virtio,version=9p2000.L,msize=1048576,cache=loose";
+            neededForBoot = true;
           };
         "/tmp/xchg" =
           { device = "xchg";
@@ -362,6 +365,18 @@ in
             options = "trans=virtio,version=9p2000.L,msize=1048576";
             neededForBoot = true;
           };
+      } // optionalAttrs cfg.writableStore
+      { "/nix/store" =
+          { fsType = "unionfs-fuse";
+            device = "unionfs";
+            options = "allow_other,cow,nonempty,chroot=/mnt-root,max_files=32768,hide_meta_files,dirs=/nix/.rw-store=rw:/nix/.ro-store=ro";
+          };
+      } // optionalAttrs (cfg.writableStore && cfg.writableStoreUseTmpfs)
+      { "/nix/.rw-store" =
+          { fsType = "tmpfs";
+            options = "mode=0755";
+            neededForBoot = true;
+          };
       } // optionalAttrs cfg.useBootLoader
       { "/boot" =
           { device = "/dev/disk/by-label/boot";
@@ -369,7 +384,7 @@ in
             options = "ro";
             noCheck = true; # fsck fails on a r/o filesystem
           };
-      };
+      });
 
     swapDevices = mkVMOverride [ ];
     boot.initrd.luks.devices = mkVMOverride [];
@@ -379,15 +394,14 @@ in
 
     system.build.vm = pkgs.runCommand "nixos-vm" { preferLocalBuild = true; }
       ''
-        ensureDir $out/bin
+        mkdir -p $out/bin
         ln -s ${config.system.build.toplevel} $out/system
         ln -s ${pkgs.writeScript "run-nixos-vm" startVM} $out/bin/run-${vmName}-vm
       '';
 
     # When building a regular system configuration, override whatever
     # video driver the host uses.
-    services.xserver.videoDriver = mkVMOverride null;
-    services.xserver.videoDrivers = mkVMOverride [ "vesa" ];
+    services.xserver.videoDrivers = mkVMOverride [ "modesetting" ];
     services.xserver.defaultDepth = mkVMOverride 0;
     services.xserver.resolutions = mkVMOverride [ { x = 1024; y = 768; } ];
     services.xserver.monitorSection =
@@ -399,6 +413,11 @@ in
 
     # Wireless won't work in the VM.
     networking.wireless.enable = mkVMOverride false;
+
+    # Speed up booting by not waiting for ARP.
+    networking.dhcpcd.extraConfig = "noarp";
+
+    networking.usePredictableInterfaceNames = false;
 
     system.requiredKernelConfig = with config.lib.kernelConfig;
       [ (isEnabled "VIRTIO_BLK")

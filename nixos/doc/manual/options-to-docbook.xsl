@@ -18,15 +18,13 @@
       <variablelist>
 
         <xsl:for-each select="attrs">
-
+          <xsl:variable name="id" select="concat('opt-', str:replace(str:replace(str:replace(str:replace(attr[@name = 'name']/string/@value, '*', '_'), '&lt;', '_'), '>', '_'), '?', '_'))" />
           <varlistentry>
-             <term>
-               <option>
-                 <xsl:for-each select="attr[@name = 'name']/string">
-                   <xsl:value-of select="@value" />
-                   <xsl:if test="position() != last()">.</xsl:if>
-                 </xsl:for-each>
-               </option>
+            <term xlink:href="#{$id}">
+              <xsl:attribute name="xml:id"><xsl:value-of select="$id"/></xsl:attribute>
+              <option>
+                <xsl:value-of select="attr[@name = 'name']/string/@value" />
+              </option>
              </term>
 
              <listitem>
@@ -35,6 +33,14 @@
                  <xsl:value-of disable-output-escaping="yes"
                                select="attr[@name = 'description']/string/@value" />
                </para>
+
+               <xsl:if test="attr[@name = 'type']">
+                 <para>
+                   <emphasis>Type:</emphasis>
+                   <xsl:text> </xsl:text>
+                   <xsl:apply-templates select="attr[@name = 'type']" mode="top" />
+                 </para>
+               </xsl:if>
 
                <xsl:if test="attr[@name = 'default']">
                  <para>
@@ -203,5 +209,11 @@
       </xsl:for-each>
     </simplelist>
   </xsl:template>
+
+
+  <xsl:template match="function">
+    <xsl:text>λ</xsl:text>
+  </xsl:template>
+
 
 </xsl:stylesheet>

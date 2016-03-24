@@ -20,11 +20,11 @@ stdenv.mkDerivation {
   # versions.
 
   libPath = stdenv.lib.makeLibraryPath
-    [ stdenv.gcc.gcc libX11 zlib libxml2 cups pango atk gtk glib gdk_pixbuf ];
+    [ stdenv.cc.gcc libX11 zlib libxml2 cups pango atk gtk glib gdk_pixbuf ];
 
   meta = {
     description = "Adobe Reader, a viewer for PDF documents";
     homepage = http://www.adobe.com/products/reader;
-    license = "unfree";
+    license = stdenv.lib.licenses.unfree;
   };
 }

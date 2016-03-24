@@ -1,36 +1,41 @@
-{ stdenv, fetchurl, cmake, x11, libX11, libXi, libXtst, libXrandr, xinput
-, cryptopp ? null, unzip ? null }:
+{ stdenv, fetchFromGitHub, cmake, x11, libX11, libXi, libXtst, libXrandr
+, xinput, curl, cryptopp ? null, unzip }:
 
 assert stdenv.isLinux -> cryptopp != null;
-assert !stdenv.isLinux -> unzip != null;
 
 with stdenv.lib;
 
 stdenv.mkDerivation rec {
-  name = "synergy-1.4.15";
+  name = "synergy-${version}";
+  version = "1.6.2";
 
-  src = fetchurl {
-    url = "http://synergy.googlecode.com/files/${name}-Source.tar.gz";
-    sha256 = "0l1mxxky9hacyva0npzkgkwg4wkmihzq3abdrds0w5f6is44adv4";
+  src = fetchFromGitHub {
+    owner = "synergy";
+    repo = "synergy";
+    rev = version;
+    sha256 = "0himg6c50x5wz5nc6rgd54rph1w6nin6j9f08pa4spsxn9b5h8ks";
   };
 
   patches = optional stdenv.isLinux ./cryptopp.patch;
 
-  postPatch = if stdenv.isLinux then ''
+  postPatch = (if stdenv.isLinux then ''
     sed -i -e '/HAVE_X11_EXTENSIONS_XRANDR_H/c \
       set(HAVE_X11_EXTENSIONS_XRANDR_H true)' CMakeLists.txt
   '' else ''
-    ${unzip}/bin/unzip -d tools/cryptopp562 tools/cryptopp562.zip
+    ${unzip}/bin/unzip -d ext/cryptopp562 ext/cryptopp562.zip
+  '') + ''
+    ${unzip}/bin/unzip -d ext/gmock-1.6.0 ext/gmock-1.6.0.zip
+    ${unzip}/bin/unzip -d ext/gtest-1.6.0 ext/gtest-1.6.0.zip
   '';
 
-  buildInputs = [ cmake x11 libX11 libXi libXtst libXrandr xinput ]
+  buildInputs = [ cmake x11 libX11 libXi libXtst libXrandr xinput curl ]
              ++ optional stdenv.isLinux cryptopp;
 
   # At this moment make install doesn't work for synergy
   # http://synergy-foss.org/spit/issues/details/3317/
 
   installPhase = ''
-    ensureDir $out/bin
+    mkdir -p $out/bin
     cp ../bin/synergyc $out/bin
     cp ../bin/synergys $out/bin
     cp ../bin/synergyd $out/bin

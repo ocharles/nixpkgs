@@ -15,6 +15,7 @@ stdenv.mkDerivation rec {
 
   preConfigure = ''
     sed -e '/SANE_CAP_ALWAYS_SETTABLE/d' -i src/xsane-back-gtk.c
+    chmod a+rX -R .
   '';
 
   buildInputs = [libpng saneBackends saneFrontends libX11 gtk pkgconfig ]
@@ -24,7 +25,7 @@ stdenv.mkDerivation rec {
   meta = {
     homepage = http://www.sane-project.org/;
     description = "Graphical scanning frontend for sane";
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
     maintainers = with stdenv.lib.maintainers; [viric simons];
     platforms = with stdenv.lib.platforms; linux;
   };

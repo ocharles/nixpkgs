@@ -1,6 +1,6 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 let
 
@@ -22,14 +22,11 @@ let
 
   nixConf =
     let
-      # Tricky: if we're using a chroot for builds, then we need
-      # /bin/sh in the chroot (our own compromise to purity).
-      # However, since /bin/sh is a symlink to some path in the
-      # Nix store, which furthermore has runtime dependencies on
-      # other paths in the store, we need the closure of /bin/sh
-      # in `build-chroot-dirs' - otherwise any builder that uses
-      # /bin/sh won't work.
-      binshDeps = pkgs.writeReferencesToFile config.system.build.binsh;
+      # If we're using a chroot for builds, then provide /bin/sh in
+      # the chroot as a bind-mount to bash. This means we also need to
+      # include the entire closure of bash.
+      sh = pkgs.stdenv.shell;
+      binshDeps = pkgs.writeReferencesToFile sh;
     in
       pkgs.runCommand "nix.conf" {extraOptions = cfg.extraOptions; } ''
         extraPaths=$(for i in $(cat ${binshDeps}); do if test -d $i; then echo $i; fi; done)
@@ -39,8 +36,9 @@ let
         # /etc/nixos/configuration.nix.  Do not edit it!
         build-users-group = nixbld
         build-max-jobs = ${toString (cfg.maxJobs)}
+        build-cores = ${toString (cfg.buildCores)}
         build-use-chroot = ${if cfg.useChroot then "true" else "false"}
-        build-chroot-dirs = ${toString cfg.chrootDirs} $(echo $extraPaths)
+        build-chroot-dirs = ${toString cfg.chrootDirs} /bin/sh=${sh} $(echo $extraPaths)
         binary-caches = ${toString cfg.binaryCaches}
         trusted-binary-caches = ${toString cfg.trustedBinaryCaches}
         $extraOptions
@@ -58,7 +56,7 @@ in
     nix = {
 
       package = mkOption {
-        type = types.path;
+        type = types.package;
         default = pkgs.nix;
         description = ''
           This option specifies the Nix package instance to use throughout the system.
@@ -75,6 +73,20 @@ in
           set it to the number of CPUs in your system (e.g., 2 on an Athlon
           64 X2).
         ";
+      };
+
+      buildCores = mkOption {
+        type = types.int;
+        default = 1;
+        example = 64;
+        description = ''
+          This option defines the maximum number of concurrent tasks during
+          one build. It affects, e.g., -j option for make. The default is 1.
+          The special value 0 means that the builder should use all
+          available CPU cores in the system. Some builds may become
+          non-deterministic with this option; use with care! Packages will
+          only be affected if enableParallelBuilding is set for them.
+        '';
       };
 
       useChroot = mkOption {
@@ -182,17 +194,6 @@ in
         '';
       };
 
-      proxy = mkOption {
-        type = types.str;
-        default = "";
-        description = ''
-          This option specifies the proxy to use for fetchurl. The real effect
-          is just exporting http_proxy, https_proxy and ftp_proxy with that
-          value.
-        '';
-        example = "http://127.0.0.1:3128";
-      };
-
       # Environment variables for running Nix.
       envVars = mkOption {
         type = types.attrs;
@@ -225,7 +226,7 @@ in
 
       binaryCaches = mkOption {
         type = types.listOf types.str;
-        default = [ http://cache.nixos.org/ ];
+        default = [ https://cache.nixos.org/ ];
         description = ''
           List of binary cache URLs used to obtain pre-built binaries
           of Nix packages.
@@ -253,8 +254,6 @@ in
 
   config = {
 
-    nix.chrootDirs = [ "/dev" "/dev/pts" "/proc" "/bin" ];
-
     environment.etc."nix/nix.conf".source = nixConf;
 
     # List of machines for distributed Nix builds in the format
@@ -275,28 +274,20 @@ in
           ) cfg.buildMachines;
       };
 
-    systemd.sockets."nix-daemon" =
-      { description = "Nix Daemon Socket";
-        wantedBy = [ "sockets.target" ];
-        before = [ "multi-user.target" ];
-        unitConfig.ConditionPathIsReadWrite = "/nix/var/nix/daemon-socket/";
-        socketConfig.ListenStream = "/nix/var/nix/daemon-socket/socket";
-      };
+    systemd.packages = [ nix ];
 
-    systemd.services."nix-daemon" =
-      { description = "Nix Daemon";
+    systemd.sockets.nix-daemon.wantedBy = [ "sockets.target" ];
 
-        path = [ nix pkgs.openssl pkgs.utillinux ]
-          ++ optionals cfg.distributedBuilds [ pkgs.openssh pkgs.gzip ];
+    systemd.services.nix-daemon =
+      { path = [ nix pkgs.openssl pkgs.utillinux pkgs.openssh ]
+          ++ optionals cfg.distributedBuilds [ pkgs.gzip ];
 
-        environment = cfg.envVars // { CURL_CA_BUNDLE = "/etc/ssl/certs/ca-bundle.crt"; };
-
-        unitConfig.ConditionPathIsReadWrite = "/nix/var/nix/daemon-socket/";
+        environment = cfg.envVars
+          // { CURL_CA_BUNDLE = "/etc/ssl/certs/ca-bundle.crt"; }
+          // config.networking.proxy.envVars;
 
         serviceConfig =
-          { ExecStart = "@${nix}/bin/nix-daemon nix-daemon --daemon";
-            KillMode = "process";
-            Nice = cfg.daemonNiceLevel;
+          { Nice = cfg.daemonNiceLevel;
             IOSchedulingPriority = cfg.daemonIONiceLevel;
             LimitNOFILE = 4096;
           };
@@ -318,17 +309,10 @@ in
         NIX_BUILD_HOOK = "${nix}/libexec/nix/build-remote.pl";
         NIX_REMOTE_SYSTEMS = "/etc/nix/machines";
         NIX_CURRENT_LOAD = "/run/nix/current-load";
-      }
-
-      # !!! These should not be defined here, but in some general proxy configuration module!
-      // optionalAttrs (cfg.proxy != "") {
-        http_proxy = cfg.proxy;
-        https_proxy = cfg.proxy;
-        ftp_proxy = cfg.proxy;
       };
 
     # Set up the environment variables for running Nix.
-    environment.variables = cfg.envVars;
+    environment.sessionVariables = cfg.envVars;
 
     environment.extraInit =
       ''
@@ -352,8 +336,7 @@ in
           /nix/var/nix/profiles \
           /nix/var/nix/db \
           /nix/var/log/nix/drvs \
-          /nix/var/nix/channel-cache \
-          /nix/var/nix/chroots
+          /nix/var/nix/channel-cache
         mkdir -m 1777 -p \
           /nix/var/nix/gcroots/per-user \
           /nix/var/nix/profiles/per-user \

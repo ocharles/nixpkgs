@@ -1,5 +1,5 @@
 { fetchurl, stdenv, ncurses, readline, gmp, mpfr, expat, texinfo
-, dejagnu, python, target ? null
+, dejagnu, python, perl, pkgconfig, guile, target ? null
 
 # Additional dependencies for GNU/Hurd.
 , mig ? null, hurd ? null
@@ -8,7 +8,7 @@
 
 let
 
-  basename = "gdb-7.6.2";
+  basename = "gdb-7.8";
 
   # Whether (cross-)building for GNU/Hurd.  This is an approximation since
   # having `stdenv ? cross' doesn't tell us if we're building `crossDrv' and
@@ -26,16 +26,18 @@ stdenv.mkDerivation rec {
       ("-" + target.config);
 
   src = fetchurl {
-    url = "mirror://gnu/gdb/${basename}.tar.bz2";
-    sha256 = "1s6hjqmq7xz10hqx45dgrpfh5mla578shn3zxgnrsv66w4n0wsig";
+    url = "mirror://gnu/gdb/${basename}.tar.xz";
+    sha256 = "49c4abe174f79f54e1f9e75210ffb590d9b497d5b5200b5398c0e073a4ecb875";
   };
+
+  patches = [ ./edit-signals.patch ];
 
   # I think python is not a native input, but I leave it
   # here while I will not need it cross building
-  nativeBuildInputs = [ texinfo python ]
+  nativeBuildInputs = [ texinfo python perl ]
     ++ stdenv.lib.optional isGNU mig;
 
-  buildInputs = [ ncurses readline gmp mpfr expat ]
+  buildInputs = [ ncurses readline gmp mpfr expat pkgconfig guile ]
     ++ stdenv.lib.optional isGNU hurd
     ++ stdenv.lib.optional doCheck dejagnu;
 
@@ -66,7 +68,7 @@ stdenv.mkDerivation rec {
   doCheck = false;
 
   meta = with stdenv.lib; {
-    description = "GDB, the GNU Project debugger";
+    description = "The GNU Project debugger";
 
     longDescription = ''
       GDB, the GNU Project debugger, allows you to see what is going
@@ -76,9 +78,9 @@ stdenv.mkDerivation rec {
 
     homepage = http://www.gnu.org/software/gdb/;
 
-    license = "GPLv3+";
+    license = stdenv.lib.licenses.gpl3Plus;
 
-    platforms = with platforms; linux ++ cygwin;
+    platforms = with platforms; linux ++ cygwin ++ darwin;
     maintainers = with maintainers; [ pierron ];
   };
 }

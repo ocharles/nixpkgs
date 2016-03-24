@@ -4,11 +4,11 @@
 , gsm, speex, portaudio, spandsp, libuuid
 }:
 stdenv.mkDerivation rec {
-  version = "0.4.3";
+  version = "0.4.12";
   name = "baresip-${version}";
   src=fetchurl {
     url = "http://www.creytiv.com/pub/baresip-${version}.tar.gz";
-    sha256 = "03vpzn0c3mybnwn84ha3yci780qsjm669dwja1srj0hbrq81rbil";
+    sha256 = "0f4jfpyvlgvq47yha3ys3kbrpd6c20yxaqki70hl6b91jbhmq9i2";
   };
   buildInputs = [zlib openssl libre librem pkgconfig
     cairo mpg123 gstreamer gst_ffmpeg gst_plugins_base gst_plugins_bad gst_plugins_good
@@ -32,8 +32,8 @@ stdenv.mkDerivation rec {
     "USE_BV32=" "USE_COREAUDIO=" "USE_G711=" "USE_G722=" "USE_G722_1=" 
     "USE_ILBC=" "USE_OPUS=" "USE_SILK=" 
   ]
-  ++ stdenv.lib.optional (stdenv.gcc.gcc != null) "SYSROOT_ALT=${stdenv.gcc.gcc}"
-  ++ stdenv.lib.optional (stdenv.gcc.libc != null) "SYSROOT=${stdenv.gcc.libc}"
+  ++ stdenv.lib.optional (stdenv.cc.gcc != null) "SYSROOT_ALT=${stdenv.cc.gcc}"
+  ++ stdenv.lib.optional (stdenv.cc.libc != null) "SYSROOT=${stdenv.cc.libc}"
   ;
   NIX_CFLAGS_COMPILE='' -I${librem}/include/rem -I${gsm}/include/gsm '';
   meta = {
@@ -41,5 +41,9 @@ stdenv.mkDerivation rec {
     platforms = with stdenv.lib.platforms; linux;
     maintainers = with stdenv.lib.maintainers; [raskin];
     license = with stdenv.lib.licenses; bsd3;
+    inherit version;
+    downloadPage = "http://www.creytiv.com/pub/";
+    updateWalker = true;
+    downloadURLRegexp = "/baresip-.*[.]tar[.].*";
   };
 }

@@ -1,8 +1,8 @@
 { pkgs
-, kernel ? pkgs.linux_3_10
+, kernel ? pkgs.linux
 , img ? "bzImage"
 , rootModules ?
-    [ "virtio_pci" "virtio_blk" "virtio_balloon" "ext4" "unix" "9p" "9pnet_virtio" ]
+    [ "virtio_pci" "virtio_blk" "virtio_balloon" "ext4" "unix" "9p" "9pnet_virtio" "rtc_cmos" ]
 }:
 
 with pkgs;
@@ -36,7 +36,7 @@ rec {
       cp -p ${pkgs.stdenv.glibc}/lib/libm.so.* $out/lib
 
       # Copy BusyBox.
-      cp -pd ${pkgs.busybox}/bin/* ${pkgs.busybox}/sbin/* $out/bin
+      cp -pd ${pkgs.busybox}/bin/* $out/bin
 
       # Run patchelf to make the programs refer to the copied libraries.
       for i in $out/bin/* $out/lib/*; do if ! test -L $i; then nuke-refs $i; fi; done
@@ -52,11 +52,12 @@ rec {
 
   createDeviceNodes = dev:
     ''
-      mknod ${dev}/null    c 1 3
-      mknod ${dev}/zero    c 1 5
-      mknod ${dev}/random  c 1 8
-      mknod ${dev}/urandom c 1 9
-      mknod ${dev}/tty     c 5 0
+      mknod -m 666 ${dev}/null    c 1 3
+      mknod -m 666 ${dev}/zero    c 1 5
+      mknod -m 666 ${dev}/random  c 1 8
+      mknod -m 666 ${dev}/urandom c 1 9
+      mknod -m 666 ${dev}/tty     c 5 0
+      mknod ${dev}/rtc     c 254 0
       . /sys/class/block/${hd}/uevent
       mknod ${dev}/${hd} b $MAJOR $MINOR
     '';
@@ -117,7 +118,7 @@ rec {
     mount -t 9p store /fs/nix/store -o trans=virtio,version=9p2000.L,msize=262144,cache=loose
 
     mkdir -p /fs/tmp
-    mount -t tmpfs -o "mode=755" none /fs/tmp
+    mount -t tmpfs -o "mode=1777" none /fs/tmp
 
     echo "mounting host's temporary directory..."
     mkdir -p /fs/tmp/xchg
@@ -158,6 +159,10 @@ rec {
   stage2Init = writeScript "vm-run-stage2" ''
     #! ${bash}/bin/sh
     source /tmp/xchg/saved-env
+
+    # Set the system time from the hardware clock.  Works around an
+    # apparent KVM > 1.5.2 bug.
+    ${pkgs.utillinux}/bin/hwclock -s
 
     export NIX_STORE=/nix/store
     export NIX_BUILD_TOP=/tmp
@@ -250,7 +255,7 @@ rec {
 
   defaultCreateRootFS = ''
     mkdir /mnt
-    ${e2fsprogs}/sbin/mkfs.ext4 /dev/${hd}
+    ${e2fsprogs}/bin/mkfs.ext4 /dev/${hd}
     ${utillinux}/bin/mount -t ext4 /dev/${hd} /mnt
 
     if test -e /mnt/.debug; then
@@ -301,14 +306,14 @@ rec {
       buildInputs = [ utillinux ];
       buildCommand = ''
         ln -s ${linux}/lib /lib
-        ${module_init_tools}/sbin/modprobe loop
-        ${module_init_tools}/sbin/modprobe ext4
-        ${module_init_tools}/sbin/modprobe hfs
-        ${module_init_tools}/sbin/modprobe hfsplus
-        ${module_init_tools}/sbin/modprobe squashfs
-        ${module_init_tools}/sbin/modprobe iso9660
-        ${module_init_tools}/sbin/modprobe ufs
-        ${module_init_tools}/sbin/modprobe cramfs
+        ${module_init_tools}/bin/modprobe loop
+        ${module_init_tools}/bin/modprobe ext4
+        ${module_init_tools}/bin/modprobe hfs
+        ${module_init_tools}/bin/modprobe hfsplus
+        ${module_init_tools}/bin/modprobe squashfs
+        ${module_init_tools}/bin/modprobe iso9660
+        ${module_init_tools}/bin/modprobe ufs
+        ${module_init_tools}/bin/modprobe cramfs
         mknod /dev/loop0 b 7 0
 
         mkdir -p $out
@@ -327,12 +332,12 @@ rec {
       buildInputs = [ utillinux mtdutils ];
       buildCommand = ''
         ln -s ${linux}/lib /lib
-        ${module_init_tools}/sbin/modprobe mtd
-        ${module_init_tools}/sbin/modprobe mtdram total_size=131072
-        ${module_init_tools}/sbin/modprobe mtdchar
-        ${module_init_tools}/sbin/modprobe mtdblock
-        ${module_init_tools}/sbin/modprobe jffs2
-        ${module_init_tools}/sbin/modprobe zlib
+        ${module_init_tools}/bin/modprobe mtd
+        ${module_init_tools}/bin/modprobe mtdram total_size=131072
+        ${module_init_tools}/bin/modprobe mtdchar
+        ${module_init_tools}/bin/modprobe mtdblock
+        ${module_init_tools}/bin/modprobe jffs2
+        ${module_init_tools}/bin/modprobe zlib
         mknod /dev/mtd0 c 90 0
         mknod /dev/mtdblock0 b 31 0
 
@@ -555,7 +560,7 @@ rec {
       buildCommand = ''
         ${createRootFS}
 
-        PATH=$PATH:${dpkg}/bin:${dpkg}/sbin:${glibc}/sbin:${lzma}/bin
+        PATH=$PATH:${dpkg}/bin:${dpkg}/bin:${glibc}/bin:${lzma}/bin
 
         # Unpack the .debs.  We do this to prevent pre-install scripts
         # (which have lots of circular dependencies) from barfing.
@@ -924,6 +929,32 @@ rec {
       packages = commonFedoraPackages ++ [ "cronie" "util-linux" ];
     };
 
+    fedora17i386 = {
+      name = "fedora-17-i386";
+      fullName = "Fedora 17 (i386)";
+      packagesList = fetchurl {
+        url = mirror://fedora/linux/releases/17/Everything/i386/os/repodata/82dc1ea6d26e53a367dc6e7472113c4454c9a8ac7c98d4bfb11fd0b6f311450f-primary.xml.gz;
+        sha256 = "03s527rvdl0zn6zx963wmjlcjm247h8p4x3fviks6lvfsak1xp42";
+      };
+      urlPrefix = mirror://fedora/linux/releases/17/Everything/i386/os;
+      archs = ["noarch" "i386" "i586" "i686"];
+      packages = commonFedoraPackages ++ [ "cronie" "util-linux" ];
+      unifiedSystemDir = true;
+    };
+
+    fedora17x86_64 = {
+      name = "fedora-17-x86_64";
+      fullName = "Fedora 17 (x86_64)";
+      packagesList = fetchurl {
+        url = mirror://fedora/linux/releases/17/Everything/x86_64/os/repodata/7009de56f1a1c399930fa72094a310a40d38153c96d0b5af443914d3d6a7d811-primary.xml.gz;
+        sha256 = "04fqlzbd651r8jpvbl4n7hakh3d422ir88571y9rkhx1y5bdw2bh";
+      };
+      urlPrefix = mirror://fedora/linux/releases/17/Everything/x86_64/os;
+      archs = ["noarch" "x86_64"];
+      packages = commonFedoraPackages ++ [ "cronie" "util-linux" ];
+      unifiedSystemDir = true;
+    };
+
     fedora18i386 = {
       name = "fedora-18-i386";
       fullName = "Fedora 18 (i386)";
@@ -971,6 +1002,32 @@ rec {
         sha256 = "d3f67da6461748f57a06459e6877fd07858828e256f58f032704186a65430fd3";
       };
       urlPrefix = mirror://fedora/linux/releases/19/Everything/x86_64/os;
+      archs = ["noarch" "x86_64"];
+      packages = commonFedoraPackages ++ [ "cronie" "util-linux" ];
+      unifiedSystemDir = true;
+    };
+
+    fedora20i386 = {
+      name = "fedora-20-i386";
+      fullName = "Fedora 20 (i386)";
+      packagesList = fetchurl {
+        url = mirror://fedora/linux/releases/20/Everything/i386/os/repodata/ae9c6ae73a12a64227e6b8e7b2d7e1c2a9515bd9c82f2af006c838e7a445dcb9-primary.xml.gz;
+        sha256 = "1ffw8njfff680vq2lby8v5dm3af2w7bv5rxqwqkl59hj7bknm75f";
+      };
+      urlPrefix = mirror://fedora/linux/releases/20/Everything/i386/os;
+      archs = ["noarch" "i386" "i586" "i686"];
+      packages = commonFedoraPackages ++ [ "cronie" "util-linux" ];
+      unifiedSystemDir = true;
+    };
+
+    fedora20x86_64 = {
+      name = "fedora-20-x86_64";
+      fullName = "Fedora 20 (x86_64)";
+      packagesList = fetchurl {
+        url = mirror://fedora/linux/releases/20/Everything/x86_64/os/repodata/d7777ea6ec66e1c86c3fe1900adf5bf8d877fb77dd06e439bd76bbbec4e82094-primary.xml.gz;
+        sha256 = "1510x32bxfvnplwy81nxfzxpgn7qbgghm4717xnciqb6xjk7wxyp";
+      };
+      urlPrefix = mirror://fedora/linux/releases/20/Everything/x86_64/os;
       archs = ["noarch" "x86_64"];
       packages = commonFedoraPackages ++ [ "cronie" "util-linux" ];
       unifiedSystemDir = true;
@@ -1040,10 +1097,10 @@ rec {
       name = "centos-6.5-i386";
       fullName = "CentOS 6.5 (i386)";
       packagesList = fetchurl {
-        url = http://mirror.centos.org/centos/6.5/os/i386/repodata/a89f27cc7d3cea431f3bd605a1e9309c32d5d409abc1b51a7b5c71c05f18a0c2-primary.xml.gz;
+        url = http://vault.centos.org/6.5/os/i386/repodata/a89f27cc7d3cea431f3bd605a1e9309c32d5d409abc1b51a7b5c71c05f18a0c2-primary.xml.gz;
         sha256 = "1hm031gw0wawgcdbbhdb17adaclw63ls21fn7cgl7siwgp62g7x8";
       };
-      urlPrefix = http://mirror.centos.org/centos/6.5/os/i386/ ;
+      urlPrefix = http://vault.centos.org/6.5/os/i386;
       archs = ["noarch" "i386"];
       packages = commonCentOSPackages;
     };
@@ -1052,10 +1109,10 @@ rec {
       name = "centos-6.5-x86_64";
       fullName = "CentOS 6.5 (x86_64)";
       packagesList = fetchurl {
-        url = http://mirror.centos.org/centos/6.5/os/x86_64/repodata/3353e378f5cb4bb6c3b3dd2ca266c6d68a1e29c36cf99f76aea3d8e158626024-primary.xml.gz;
+        url = http://vault.centos.org/6.5/os/x86_64/repodata/3353e378f5cb4bb6c3b3dd2ca266c6d68a1e29c36cf99f76aea3d8e158626024-primary.xml.gz;
         sha256 = "0930c9cf3n53mrv9zybcqclix2nnqrka4b6xng1vcjybymwf6lrk";
       };
-      urlPrefix = http://mirror.centos.org/centos/6.5/os/x86_64/ ;
+      urlPrefix = http://vault.centos.org/6.5/os/x86_64/;
       archs = ["noarch" "x86_64"];
       packages = commonCentOSPackages;
     };
@@ -1316,7 +1373,7 @@ rec {
           })
           (fetchurl {
             url = mirror://ubuntu/dists/quantal/universe/binary-i386/Packages.bz2;
-            sha256 = "323036e81c8bf409f71d3bc5cf37cfba72fe1d0fc82e9b5418d4d0cb516646e1";
+            sha256 = "9933ce12e7830b9c68a4aead08b86fcbb8d6ef0ea1fd133f0cf9d7126ad8c9bd";
           })
         ];
       urlPrefix = mirror://ubuntu;
@@ -1333,7 +1390,7 @@ rec {
           })
           (fetchurl {
             url = mirror://ubuntu/dists/quantal/universe/binary-amd64/Packages.bz2;
-            sha256 = "c762bd4ed063326577a62ff783cf9720e772b03d4a2aa38048918ee6287b96ce";
+            sha256 = "329a98312248c98092f8b91f232fc68fd3e6e2337ea4f348b3785465ae8dae17";
           })
         ];
       urlPrefix = mirror://ubuntu;
@@ -1350,7 +1407,7 @@ rec {
           })
           (fetchurl {
             url = mirror://ubuntu/dists/raring/universe/binary-i386/Packages.bz2;
-            sha256 = "1db19982fc3689b00a918e2cdbb936dfccebbac2ed82f81bb0164a3d51039012";
+            sha256 = "c1a59dd9132654194f4470932fd0f1582496465d8f96909b22accaf9f404024a";
           })
         ];
       urlPrefix = mirror://ubuntu;
@@ -1367,7 +1424,7 @@ rec {
           })
           (fetchurl {
             url = mirror://ubuntu/dists/raring/universe/binary-amd64/Packages.bz2;
-            sha256 = "0caf561bad359e8a82a987a076c0f1cb7a43412a5de053c105b160477c192978";
+            sha256 = "8aba137ae18540a12de03a564c11496431a150ab2d4d1e93e2b4b691fa2a4850";
           })
         ];
       urlPrefix = mirror://ubuntu;
@@ -1384,7 +1441,7 @@ rec {
           })
           (fetchurl {
             url = mirror://ubuntu/dists/saucy/universe/binary-i386/Packages.bz2;
-            sha256 = "84ff81ef23bcece68bfc3dd4b0b1fd38e5b81ac90ad48b4e4210396b425da500";
+            sha256 = "897f64c19a742ac8524c17c1b5ec31b33ec8ab20c85463010d8bf04f5d14aa0f";
           })
         ];
       urlPrefix = mirror://ubuntu;
@@ -1401,7 +1458,75 @@ rec {
           })
           (fetchurl {
             url = mirror://ubuntu/dists/saucy/universe/binary-amd64/Packages.bz2;
-            sha256 = "06ec77f2f5d6ee70ffb805affe3a6b3e8d5b6463fbfe42ba6588295c7e1f65bc";
+            sha256 = "a899ce5513ce8540ce9b8da4c1cd85b16b231900881b3aa559f7ac3182cdbfc8";
+          })
+        ];
+      urlPrefix = mirror://ubuntu;
+      packages = commonDebPackages ++ [ "diffutils" "libc-bin" ];
+    };
+
+    ubuntu1404i386 = {
+      name = "ubuntu-14.04-trusty-i386";
+      fullName = "Ubuntu 14.04 Trusty (i386)";
+      packagesLists =
+        [ (fetchurl {
+            url = mirror://ubuntu/dists/trusty/main/binary-i386/Packages.bz2;
+            sha256 = "fdfc38663915c5cef3029872deb8c3bf52b98092073058086e2f1db0c71ebeb4";
+          })
+          (fetchurl {
+            url = mirror://ubuntu/dists/trusty/universe/binary-i386/Packages.bz2;
+            sha256 = "2afcf259332d88c5e02f5446c4926edd567ef1a00ce24ca7cb400cbf44e2a90f";
+          })
+        ];
+      urlPrefix = mirror://ubuntu;
+      packages = commonDebPackages ++ [ "diffutils" "libc-bin" ];
+    };
+
+    ubuntu1404x86_64 = {
+      name = "ubuntu-14.04-trusty-amd64";
+      fullName = "Ubuntu 14.04 Trusty (amd64)";
+      packagesList =
+        [ (fetchurl {
+            url = mirror://ubuntu/dists/trusty/main/binary-amd64/Packages.bz2;
+            sha256 = "7095917eb8e4ac9161bc3b2ceeaf86e9265aae7b855a0e15d72096ecb05f1fc2";
+          })
+          (fetchurl {
+            url = mirror://ubuntu/dists/trusty/universe/binary-amd64/Packages.bz2;
+            sha256 = "558637eeb8e340b871653e2060effe36e064677eca4eae62d9e4138dd402a610";
+          })
+        ];
+      urlPrefix = mirror://ubuntu;
+      packages = commonDebPackages ++ [ "diffutils" "libc-bin" ];
+    };
+
+    ubuntu1410i386 = {
+      name = "ubuntu-14.10-utopic-i386";
+      fullName = "Ubuntu 14.10 Utopic (i386)";
+      packagesLists =
+        [ (fetchurl {
+            url = mirror://ubuntu/dists/utopic/main/binary-i386/Packages.bz2;
+            sha256 = "dc33a906ccb5625740251da759393d7daace65013d421c79fdd6c99a6490d989";
+          })
+          (fetchurl {
+            url = mirror://ubuntu/dists/utopic/universe/binary-i386/Packages.bz2;
+            sha256 = "e50553c033d9e478507405e63ce7d43c8060368ea851eca0c93b75b72fd85167";
+          })
+        ];
+      urlPrefix = mirror://ubuntu;
+      packages = commonDebPackages ++ [ "diffutils" "libc-bin" ];
+    };
+
+    ubuntu1410x86_64 = {
+      name = "ubuntu-14.10-utopic-amd64";
+      fullName = "Ubuntu 14.10 Utopic (amd64)";
+      packagesList =
+        [ (fetchurl {
+            url = mirror://ubuntu/dists/utopic/main/binary-amd64/Packages.bz2;
+            sha256 = "9650775abec90a24c26dbb03f91a488180309144338f64f7044f7119d60d7182";
+          })
+          (fetchurl {
+            url = mirror://ubuntu/dists/utopic/universe/binary-amd64/Packages.bz2;
+            sha256 = "2acf0e39e64b4fd6d2b68b55c598fc167d7c3cabae233fc31a1e6b69eb6ecc63";
           })
         ];
       urlPrefix = mirror://ubuntu;
@@ -1453,22 +1578,22 @@ rec {
     };
 
     debian60i386 = {
-      name = "debian-6.0.8-squeeze-i386";
-      fullName = "Debian 6.0.8 Squeeze (i386)";
+      name = "debian-6.0.10-squeeze-i386";
+      fullName = "Debian 6.0.10 Squeeze (i386)";
       packagesList = fetchurl {
         url = mirror://debian/dists/squeeze/main/binary-i386/Packages.bz2;
-        sha256 = "c850339aaf46a4ed4abc7c1789c29ea58c3a152aa173ee004578fda86b28391f";
+        sha256 = "c08899011a7a2b0df4da08f91eef3a80d112a247df988b1c966c9fb64c812392";
       };
       urlPrefix = mirror://debian;
       packages = commonDebianPackages;
     };
 
     debian60x86_64 = {
-      name = "debian-6.0.8-squeeze-amd64";
-      fullName = "Debian 6.0.8 Squeeze (amd64)";
+      name = "debian-6.0.10-squeeze-amd64";
+      fullName = "Debian 6.0.10 Squeeze (amd64)";
       packagesList = fetchurl {
         url = mirror://debian/dists/squeeze/main/binary-amd64/Packages.bz2;
-        sha256 = "1506ab7de3ad5a2c706183536d2ee88589d7cb922d9e0de36ac062d464082dda";
+        sha256 = "3f2ebd5221b9a4bdf7224acf728a51a987c63d32df1bbc20a97f177d2f184045";
       };
       urlPrefix = mirror://debian;
       packages = commonDebianPackages;
@@ -1479,22 +1604,22 @@ rec {
     debian70x86_64 = debian7x86_64;
 
     debian7i386 = {
-      name = "debian-7.3-wheezy-i386";
-      fullName = "Debian 7.3 Wheezy (i386)";
+      name = "debian-7.8-wheezy-i386";
+      fullName = "Debian 7.8 Wheezy (i386)";
       packagesList = fetchurl {
         url = mirror://debian/dists/wheezy/main/binary-i386/Packages.bz2;
-        sha256 = "037637520ce371a50beb5446fd27a731f30b51bc362c2f4a5dcfce9c7e30ffb6";
+        sha256 = "d86c28cb4f1aa178e678c253944c674a60991a367349e58a90d9a3e939e4e4bc";
       };
       urlPrefix = mirror://debian;
       packages = commonDebianPackages;
     };
 
     debian7x86_64 = {
-      name = "debian-7.3-wheezy-amd64";
-      fullName = "Debian 7.3 Wheezy (amd64)";
+      name = "debian-7.8-wheezy-amd64";
+      fullName = "Debian 7.8 Wheezy (amd64)";
       packagesList = fetchurl {
         url = mirror://debian/dists/wheezy/main/binary-amd64/Packages.bz2;
-        sha256 = "c2ed55a2a263d482826c934b97ad910984fa5695ab1c480841741b828d0590a5";
+        sha256 = "c8257d74c9411e2f0b9891a21f5dbf5fb088b46d1df043907a4d390b32da2931";
       };
       urlPrefix = mirror://debian;
       packages = commonDebianPackages;
@@ -1543,6 +1668,28 @@ rec {
     "perl"
     "pkgconfig"
     "procps"
+    "rpm"
+    "rpm-build"
+    "tar"
+    "unzip"
+  ];
+
+  commonRHELPackages = [
+    "autoconf"
+    "automake"
+    "basesystem"
+    "bzip2"
+    "curl"
+    "diffutils"
+    "findutils"
+    "gawk"
+    "gcc-c++"
+    "gzip"
+    "make"
+    "patch"
+    "perl"
+    "pkgconfig"
+    "procps-ng"
     "rpm"
     "rpm-build"
     "tar"
@@ -1662,5 +1809,4 @@ rec {
       };
 
     };
-
-}
+} // import ./windows pkgs

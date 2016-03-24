@@ -1,15 +1,15 @@
-{ stdenv, fetchurl, qt4, jackaudio, lv2 }:
+{ stdenv, fetchurl, qt4, jack2, lv2 }:
 
 stdenv.mkDerivation rec {
   name = "synthv1-${version}";
-  version = "0.3.2";
+  version = "0.5.1";
 
   src = fetchurl {
     url = "mirror://sourceforge/synthv1/${name}.tar.gz";
-    sha256 = "1230yf49qfw540yvp5n7sh6mf3k8590pzwc5mragd3nd6k6apgw9";
+    sha256 = "16wcxrcjwp0qp2xgahhzvcs2k31sr6c9jsxyhivj4famj7a39pfw";
   };
 
-  buildInputs = [ qt4 jackaudio lv2 ];
+  buildInputs = [ qt4 jack2 lv2 ];
 
   meta = with stdenv.lib; {
     description = "An old-school 4-oscillator subtractive polyphonic synthesizer with stereo fx";

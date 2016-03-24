@@ -1,4 +1,4 @@
-{ stdenv, fetchurl
+{ stdenv, fetchurl, fetchpatch
 , SDL, SDL_mixer, gstreamer, gst_plugins_base, gst_plugins_good
 , gst_ffmpeg, speex
 , libogg, libxml2, libjpeg, mesa, libpng, libungif, libtool
@@ -10,7 +10,13 @@
 
 assert stdenv ? glibc;
 
-let version = "0.8.10"; in
+let version = "0.8.10";
+    patch_CVE = fetchpatch {
+      url = "http://git.savannah.gnu.org/cgit/gnash.git/patch/?id=bb4dc77eecb6ed1b967e3ecbce3dac6c5e6f1527";
+      sha256 = "0ghnki5w7xf3qwfl1x6vhijpd6q608niyxrvh0g8dw5xavkvallk";
+      name = "CVE-2012-1175.patch";
+    };
+in
 
 stdenv.mkDerivation rec {
   name = "gnash-${version}";
@@ -21,13 +27,14 @@ stdenv.mkDerivation rec {
   };
 
   patchPhase = ''
+    patch -p1 < ${patch_CVE}
+
     # Add all libs to `macros/libslist', a list of library search paths.
-    for lib in ${lib.concatStringsSep " "
-                                      (map (lib: "\"${lib}\"/lib")
-                                           (buildInputs ++ [stdenv.glibc]))}
-    do
+    libs=$(echo "$NIX_LDFLAGS" | tr ' ' '\n' | sed -n 's/.*-L\(.*\).*/\1/p')
+    for lib in $libs; do
       echo -n "$lib " >> macros/libslist
     done
+    echo -n "${stdenv.glibc}/lib" >> macros/libslist
 
     # Make sure to honor $TMPDIR, for chroot builds.
     for file in configure gui/Makefile.in Makefile.in
@@ -73,6 +80,8 @@ stdenv.mkDerivation rec {
        echo "\$GST_PLUGIN_PATH set to \`$GST_PLUGIN_PATH'"
     '';
 
+  postConfigure = "echo '#define nullptr NULL' >> gnashconfig.h";
+
   # Make sure `gtk-gnash' gets `libXext' in its `RPATH'.
   NIX_LDFLAGS="-lX11 -lXext";
 
@@ -87,15 +96,13 @@ stdenv.mkDerivation rec {
     # (e.g., gst-ffmpeg is needed to watch movies such as YouTube's).
     for prog in "$out/bin/"*
     do
-      wrapProgram "$prog" --prefix                                            \
-        GST_PLUGIN_PATH ":"                                                     \
-        "${gst_plugins_base}/lib/gstreamer-0.10:${gst_plugins_good}/lib/gstreamer-0.10:${gst_ffmpeg}/lib/gstreamer-0.10"
+      wrapProgram "$prog" --prefix GST_PLUGIN_SYSTEM_PATH ":" "$GST_PLUGIN_SYSTEM_PATH"
     done
   '';
 
   meta = {
     homepage = http://www.gnu.org/software/gnash/;
-    description = "GNU Gnash, a libre SWF (Flash) movie player";
+    description = "A libre SWF (Flash) movie player";
 
     longDescription = ''
       Gnash is a GNU Flash movie player.  Flash is an animation file format
@@ -106,9 +113,9 @@ stdenv.mkDerivation rec {
       supports most SWF v7 features and some SWF v8 and v9.
     '';
 
-    license = "GPLv3+";
+    license = stdenv.lib.licenses.gpl3Plus;
 
-    maintainers = [ stdenv.lib.maintainers.ludo ];
+    maintainers = [ ];
     platforms = stdenv.lib.platforms.gnu;
   };
 } // {mozillaPlugin = "/plugins";}

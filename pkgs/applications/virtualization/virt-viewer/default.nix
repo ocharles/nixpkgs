@@ -1,50 +1,50 @@
-x@{builderDefsPackage
-  , gnome, gtk, glib, libxml2, pkgconfig, libvirt, gtkvnc, cyrus_sasl, libtasn1
-  , gnupg, libgcrypt, perl, nettle, yajl, libcap_ng
-  , ...}:
-builderDefsPackage
-(a :  
-let 
-  helperArgNames = ["stdenv" "fetchurl" "builderDefsPackage"] ++ 
-    ["gnome"];
+{ stdenv, fetchurl, pkgconfig, intltool, glib, libxml2, gtk3, gtkvnc, gmp
+, libgcrypt, gnupg, cyrus_sasl, shared_mime_info, libvirt, libcap_ng, yajl
+, gsettings_desktop_schemas, makeWrapper
+, spiceSupport ? true, spice_gtk ? null, spice_protocol ? null, libcap ? null, gdbm ? null
+}:
 
-  buildInputs = (map (n: builtins.getAttr n x)
-    (builtins.attrNames (builtins.removeAttrs x helperArgNames)))
-    ++ [gnome.libglade];
-  sourceInfo = rec {
+assert spiceSupport ->
+  spice_gtk != null && spice_protocol != null && libcap != null && gdbm != null;
+
+with stdenv.lib;
+
+let sourceInfo = rec {
     baseName="virt-viewer";
-    version="0.2.0";
+    version="1.0";
     name="${baseName}-${version}";
     url="http://virt-manager.org/download/sources/${baseName}/${name}.tar.gz";
-    hash="0lhkmp4kn0s2z8241lqf2fdi55jg9iclr5hjw3m4wzaznpiajwlp";
-  };
-in
-rec {
-  src = a.fetchurl {
+    hash="09sf1xzvw2yysv4c1jkqlzrazdg501r4j12hiwjdzk5swk6lppw0";
+}; in
+
+stdenv.mkDerivation  {
+  inherit (sourceInfo) name version;
+
+  src = fetchurl {
     url = sourceInfo.url;
     sha256 = sourceInfo.hash;
   };
 
-  inherit (sourceInfo) name version;
-  inherit buildInputs;
+  buildInputs = [ 
+    pkgconfig intltool glib libxml2 gtk3 gtkvnc gmp libgcrypt gnupg cyrus_sasl
+    shared_mime_info libvirt libcap_ng yajl gsettings_desktop_schemas makeWrapper
+  ] ++ optionals spiceSupport [ spice_gtk spice_protocol libcap gdbm ];
 
-  /* doConfigure should be removed if not needed */
-  phaseNames = ["doConfigure" "doMakeInstall"];
-      
+  postInstall = ''
+    for f in "$out"/bin/*; do
+        wrapProgram "$f" --prefix XDG_DATA_DIRS : "$GSETTINGS_SCHEMAS_PATH"
+    done
+  '';
+
   meta = {
     description = "A viewer for remote virtual machines";
-    maintainers = with a.lib.maintainers;
-    [
-      raskin
-    ];
-    platforms = with a.lib.platforms;
-      linux;
-    license = a.lib.licenses.gpl2;
+    maintainers = [ maintainers.raskin ];
+    platforms = platforms.linux;
+    license = licenses.gpl2;
   };
   passthru = {
     updateInfo = {
       downloadPage = "http://virt-manager.org/download.html";
     };
   };
-}) x
-
+}

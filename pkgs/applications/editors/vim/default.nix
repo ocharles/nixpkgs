@@ -1,16 +1,18 @@
 { stdenv, fetchhg, ncurses, gettext, pkgconfig }:
 
 stdenv.mkDerivation rec {
-  name = "vim-7.4.131";
- 
+  name = "vim-${version}";
+
+  version = "7.4.410";
+
   src = fetchhg {
     url = "https://vim.googlecode.com/hg/";
-    tag = "v7-4-131";
-    sha256 = "1akr0i4pykbrkqwrglm0dfn5nwpncb9pgg4h7fl6a8likbr5f3wb";
+    rev = "v7-4-410";
+    sha256 = "145llhj6gq2bh9b7p8xkxc388krrximq80b87f3cn4w4d4k9fhqp";
   };
 
   enableParallelBuilding = true;
- 
+
   buildInputs = [ ncurses pkgconfig ];
   nativeBuildInputs = [ gettext ];
 

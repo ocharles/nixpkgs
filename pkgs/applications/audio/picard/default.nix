@@ -1,23 +1,17 @@
-{ stdenv, fetchurl, pythonPackages, gettext, pyqt4
-, pkgconfig, libdiscid, libofa, ffmpeg, acoustidFingerprinter
+{ stdenv, buildPythonPackage, fetchurl, gettext
+, pkgconfig, libofa, ffmpeg, chromaprint
+, pyqt4, mutagen, python-libdiscid
 }:
 
-pythonPackages.buildPythonPackage rec {
+let version = "1.3"; in
+buildPythonPackage {
   name = "picard-${version}";
   namePrefix = "";
-  version = "1.2";
 
   src = fetchurl {
-    url = "http://ftp.musicbrainz.org/pub/musicbrainz/picard/${name}.tar.gz";
-    md5 = "d1086687b7f7b0d359a731b1a25e7b66";
+    url = "ftp://ftp.musicbrainz.org/pub/musicbrainz/picard/picard-${version}.tar.gz";
+    sha256 = "06s90w1j29qhd931dgj752k5v4pjbvxiz6g0613xzj3ms8zsrlys";
   };
-
-  postPatch = let
-    fpr = "${acoustidFingerprinter}/bin/acoustid_fpcalc";
-  in ''
-    sed -ri -e 's|(TextOption.*"acoustid_fpcalc"[^"]*")[^"]*|\1${fpr}|' \
-      picard/ui/options/fingerprinting.py
-  '';
 
   buildInputs = [
     pkgconfig
@@ -27,18 +21,10 @@ pythonPackages.buildPythonPackage rec {
   ];
 
   propagatedBuildInputs = [
-    pythonPackages.mutagen
     pyqt4
-    libdiscid
+    mutagen
+    python-libdiscid
   ];
-
-  configurePhase = ''
-    python setup.py config
-  '';
-
-  buildPhase = ''
-    python setup.py build
-  '';
 
   installPhase = ''
     python setup.py install --prefix="$out"
@@ -46,9 +32,11 @@ pythonPackages.buildPythonPackage rec {
 
   doCheck = false;
 
-  meta = {
+  meta = with stdenv.lib; {
     homepage = "http://musicbrainz.org/doc/MusicBrainz_Picard";
     description = "The official MusicBrainz tagger";
-    license = stdenv.lib.licenses.gpl2;
+    maintainers = with maintainers; [ emery ];
+    license = licenses.gpl2;
+    platforms = platforms.all;
   };
 }

@@ -36,6 +36,8 @@ $pcMap{"libudev"} = "udev";
 $pcMap{"gl"} = "mesa";
 $pcMap{"\$PIXMAN"} = "pixman";
 $pcMap{"\$RENDERPROTO"} = "renderproto";
+$pcMap{"\$DRI3PROTO"} = "dri3proto";
+$pcMap{"\$DRI2PROTO"} = "dri2proto";
 
 
 my $downloadCache = "./download-cache";
@@ -207,6 +209,7 @@ while (<>) {
     process \@requires, $1 while $file =~ /XDMCP_MODULES=\"(.*)\"/g;
     process \@requires, $1 while $file =~ /XORG_MODULES=\"(.*)\"/g;
     process \@requires, $1 while $file =~ /NEEDED=\"(.*)\"/g;
+    process \@requires, $1 while $file =~ /ivo_requires=\"(.*)\"/g;
     process \@requires, $1 while $file =~ /XORG_DRIVER_CHECK_EXT\([^,]*,([^\)]*)\)/g;
 
     push @requires, "libxslt" if $pkg =~ /libxcb/;
@@ -229,6 +232,11 @@ print OUT <<EOF;
 args: with args;
 
 let
+
+  mkDerivation = name: attrs:
+    let newAttrs = (overrides."\${name}" or (x: x)) attrs;
+        stdenv = newAttrs.stdenv or args.stdenv;
+    in stdenv.mkDerivation (removeAttrs newAttrs [ "stdenv" ]);
 
   overrides = import ./overrides.nix {inherit args xorg;};
 
@@ -261,7 +269,7 @@ foreach my $pkg (sort (keys %pkgURLs)) {
     $extraAttrs = "" unless defined $extraAttrs;
 
     print OUT <<EOF
-  $pkg = (stdenv.mkDerivation ((if overrides ? $pkg then overrides.$pkg else x: x) {
+  $pkg = (mkDerivation "$pkg" {
     name = "$pkgNames{$pkg}";
     builder = ./builder.sh;
     src = fetchurl {
@@ -269,7 +277,7 @@ foreach my $pkg (sort (keys %pkgURLs)) {
       sha256 = "$pkgHashes{$pkg}";
     };
     buildInputs = [pkgconfig $inputs];$extraAttrs
-  })) // {inherit $inputs;};
+  }) // {inherit $inputs;};
 
 EOF
 }

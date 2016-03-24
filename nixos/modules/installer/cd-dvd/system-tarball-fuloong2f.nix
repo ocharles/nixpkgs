@@ -1,6 +1,6 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 let
 
@@ -76,10 +76,8 @@ in
       pkgs.ntfsprogs # for resizing NTFS partitions
       pkgs.btrfsProgs
       pkgs.jfsutils
-      pkgs.jfsrec
 
       # Some compression/archiver tools.
-      pkgs.unrar
       pkgs.unzip
       pkgs.zip
       pkgs.xz
@@ -152,7 +150,7 @@ in
   # default root password is empty.
   services.openssh.enable = true;
 
-  jobs.openssh.startOn = pkgs.lib.mkOverride 50 "";
+  jobs.openssh.startOn = lib.mkOverride 50 "";
 
   boot.loader.grub.enable = false;
   boot.loader.generationsDir.enable = false;

@@ -1,6 +1,6 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 let
   cfg = config.services.nginx;
@@ -9,6 +9,12 @@ let
     user ${cfg.user} ${cfg.group};
     daemon off;
     ${cfg.config}
+    ${optionalString (cfg.httpConfig != "") ''
+    http {
+      ${cfg.httpConfig}
+    }
+    ''}
+    ${cfg.appendConfig}
   '';
 in
 
@@ -17,6 +23,7 @@ in
     services.nginx = {
       enable = mkOption {
         default = false;
+        type = types.bool;
         description = "
           Enable the nginx Web Server.
         ";
@@ -24,6 +31,7 @@ in
 
       package = mkOption {
         default = pkgs.nginx;
+        type = types.package;
         description = "
           Nginx package to use.
         ";
@@ -36,6 +44,25 @@ in
         ";
       };
 
+      appendConfig = mkOption {
+        type = types.lines;
+        default = "";
+        description = ''
+          Configuration lines appended to the generated Nginx
+          configuration file. Commonly used by different modules
+          providing http snippets. <option>appendConfig</option>
+          can be specified more than once and it's value will be
+          concatenated (contrary to <option>config</option> which
+          can be set only once).
+        '';
+      };
+
+      httpConfig = mkOption {
+        type = types.lines;
+        default = "";
+        description = "Configuration lines to be appended inside of the http {} block.";
+      };
+
       stateDir = mkOption {
         default = "/var/spool/nginx";
         description = "
@@ -44,11 +71,13 @@ in
       };
 
       user = mkOption {
+        type = types.str;
         default = "nginx";
         description = "User account under which nginx runs.";
       };
 
       group = mkOption {
+        type = types.str;
         default = "nginx";
         description = "Group account under which nginx runs.";
       };
@@ -58,8 +87,6 @@ in
   };
 
   config = mkIf cfg.enable {
-    environment.systemPackages = [ nginx ];
-
     # TODO: test user supplied config file pases syntax test
 
     systemd.services.nginx = {
@@ -70,6 +97,7 @@ in
       preStart =
         ''
         mkdir -p ${cfg.stateDir}/logs
+        chmod 700 ${cfg.stateDir}
         chown -R ${cfg.user}:${cfg.group} ${cfg.stateDir}
         '';
       serviceConfig = {
@@ -79,7 +107,7 @@ in
 
     users.extraUsers = optionalAttrs (cfg.user == "nginx") (singleton
       { name = "nginx";
-        group = "nginx";
+        group = cfg.group;
         uid = config.ids.uids.nginx;
       });
 

@@ -46,10 +46,10 @@ let version = "5.18"; in
         documentation of program options.
       '';
 
-      licenses = ["GPLv3+" "LGPLv3+" ];
+      license = ["GPLv3+" "LGPLv3+" ];
 
       homepage = http://www.gnu.org/software/autogen/;
 
-      maintainers = [ stdenv.lib.maintainers.ludo ];
+      maintainers = [ ];
     };
   }

@@ -1,24 +1,31 @@
 { stdenv, fetchurl, glib, libxml2, pkgconfig
-, gnomeSupport ? true, libgnome_keyring, sqlite, glib_networking
-, libintlOrEmpty }:
-
+, gnomeSupport ? true, libgnome_keyring, sqlite, glib_networking, gobjectIntrospection
+, libintlOrEmpty
+, intltool, python }:
+let
+  majorVersion = "2.48";
+  version = "${majorVersion}.0";
+in
 stdenv.mkDerivation {
-  name = "libsoup-2.38.1";
+  name = "libsoup-${version}";
 
   src = fetchurl {
-    url = mirror://gnome/sources/libsoup/2.38/libsoup-2.38.1.tar.xz;
-    sha256 = "16iza4y8pmc4sn90iid88fgminvgcqypy3s2qnmzkzm5qwzr5f3i";
+    url = "mirror://gnome/sources/libsoup/${majorVersion}/libsoup-${version}.tar.xz";
+    sha256 = "ea34dd64fe44343445daf6dd690d0691e9d973468de44878da97371c16d89784";
   };
 
+  patchPhase = ''
+    patchShebangs libsoup/
+  '';
 
-  buildInputs = libintlOrEmpty;
+  buildInputs = libintlOrEmpty ++ [ intltool python sqlite ];
   nativeBuildInputs = [ pkgconfig ];
-  propagatedBuildInputs = [ glib libxml2 ]
-    ++ stdenv.lib.optionals gnomeSupport [ libgnome_keyring sqlite ];
+  propagatedBuildInputs = [ glib libxml2 gobjectIntrospection ]
+    ++ stdenv.lib.optionals gnomeSupport [ libgnome_keyring ];
   passthru.propagatedUserEnvPackages = [ glib_networking ];
 
   # glib_networking is a runtime dependency, not a compile-time dependency
-  configureFlags = "--disable-tls-check";
+  configureFlags = "--disable-tls-check" + stdenv.lib.optionalString (!gnomeSupport) " --without-gnome";
 
   NIX_CFLAGS_COMPILE = stdenv.lib.optionalString stdenv.isDarwin "-lintl";
 

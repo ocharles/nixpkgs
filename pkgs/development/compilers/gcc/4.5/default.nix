@@ -185,11 +185,11 @@ stdenv.mkDerivation ({
            sed -i gcc/config/t-gnu \
                -es'|NATIVE_SYSTEM_HEADER_DIR.*$|NATIVE_SYSTEM_HEADER_DIR = ${libc}/include|g'
         ''
-    else if cross != null || stdenv.gcc.libc != null then
+    else if cross != null || stdenv.cc.libc != null then
       # On NixOS, use the right path to the dynamic linker instead of
       # `/lib/ld*.so'.
       let
-        libc = if libcCross != null then libcCross else stdenv.gcc.libc;
+        libc = if libcCross != null then libcCross else stdenv.cc.libc;
       in
         '' echo "fixing the \`GLIBC_DYNAMIC_LINKER' and \`UCLIBC_DYNAMIC_LINKER' macros..."
            for header in "gcc/config/"*-gnu.h "gcc/config/"*"/"*.h
@@ -212,7 +212,7 @@ stdenv.mkDerivation ({
     ++ (optional (ppl != null) ppl)
     ++ (optional (cloogppl != null) cloogppl)
     ++ (optional (zlib != null) zlib)
-    ++ (optional (boehmgc != null) boehmgc)
+    ++ (optional langJava boehmgc)
     ++ (optionals langJava [zip unzip])
     ++ (optionals javaAwtGtk ([gtk pkgconfig libart_lgpl] ++ xlibs))
     ++ (optionals (cross != null) [binutilsCross])
@@ -272,7 +272,7 @@ stdenv.mkDerivation ({
     NM_FOR_TARGET = "${stdenv.cross.config}-nm";
     CXX_FOR_TARGET = "${stdenv.cross.config}-g++";
     # If we are making a cross compiler, cross != null
-    NIX_GCC_CROSS = if cross == null then "${stdenv.gccCross}" else "";
+    NIX_CC_CROSS = if cross == null then "${stdenv.ccCross}" else "";
     dontStrip = true;
     configureFlags = ''
       ${if enableMultilib then "" else "--disable-multilib"}
@@ -364,7 +364,7 @@ stdenv.mkDerivation ({
 
   meta = {
     homepage = http://gcc.gnu.org/;
-    license = "GPLv3+";  # runtime support libraries are typically LGPLv3+
+    license = stdenv.lib.licenses.gpl3Plus;  # runtime support libraries are typically LGPLv3+
     description = "GNU Compiler Collection, version ${version}"
       + (if stripped then "" else " (with debugging info)");
 
@@ -378,7 +378,6 @@ stdenv.mkDerivation ({
     '';
 
     maintainers = [
-      stdenv.lib.maintainers.ludo
       stdenv.lib.maintainers.viric
     ];
 
@@ -432,7 +431,7 @@ stdenv.mkDerivation ({
 
   meta = {
     homepage = "http://ghdl.free.fr/";
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
     description = "Complete VHDL simulator, using the GCC technology (gcc ${version})";
     maintainers = with stdenv.lib.maintainers; [viric];
     platforms = with stdenv.lib.platforms; linux;

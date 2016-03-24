@@ -1,54 +1,51 @@
-{ stdenv, fetchurl, perl, python, ruby, bison, gperf, flex
-, pkgconfig, which, gettext, gobjectIntrospection
+{ stdenv, fetchurl, perl, python, ruby, bison, gperf, cmake
+, pkgconfig, gettext, gobjectIntrospection
 , gtk2, gtk3, wayland, libwebp, enchant
-, libxml2, libsoup, libsecret, libxslt, harfbuzz
+, libxml2, libsoup, libsecret, libxslt, harfbuzz, libpthreadstubs
+, enableGeoLocation ? true, geoclue2, sqlite
+, gst-plugins-base
 }:
 
+assert enableGeoLocation -> geoclue2 != null;
+
+with stdenv.lib;
 stdenv.mkDerivation rec {
-  name = "webkitgtk-2.2.3";
+  name = "webkitgtk-${version}";
+  version = "2.6.4";
 
   meta = {
     description = "Web content rendering engine, GTK+ port";
     homepage = "http://webkitgtk.org/";
-    license = stdenv.lib.licenses.bsd2;
-    platforms = stdenv.lib.platforms.linux;
-    maintainers = with stdenv.lib.maintainers; [ iyzsong ];
+    license = licenses.bsd2;
+    platforms = platforms.linux;
+    maintainers = with maintainers; [ iyzsong koral ];
   };
+
+  preConfigure = "patchShebangs Tools";
 
   src = fetchurl {
     url = "http://webkitgtk.org/releases/${name}.tar.xz";
-    sha256 = "01a69v0aw3bv2zkx6jzk71r3pjlf2xfhxavjnma89kmd78qb7g4l";
+    sha256 = "16rffxkz4w3sd7w4j3z3dycny8sdqxrz62yq4bgcmffrxlj5xvxy";
   };
 
-  patches = [ ./webcore-svg-libxml-cflags.patch ];
+  patches = [ ./finding-harfbuzz-icu.patch ];
 
-  prePatch = ''
-    patchShebangs Tools/gtk
-
-    for i in $(find . -name '*.p[l|m]'); do
-      sed -e 's@/usr/bin/gcc@gcc@' -i $i
-    done
-  '';
-
-  configureFlags = [
-    "--disable-geolocation"
-    "--disable-video"              # TODO: gsteramer-1.0
-    "--enable-introspection"
-  ];
-
-  dontAddDisableDepTrack = true;
+  cmakeFlags = [ "-DPORT=GTK" ];
 
   nativeBuildInputs = [
-    perl python ruby bison gperf flex
-    pkgconfig which gettext gobjectIntrospection
+    cmake perl python ruby bison gperf sqlite
+    pkgconfig gettext gobjectIntrospection
   ];
 
   buildInputs = [
     gtk2 wayland libwebp enchant
-    libxml2 libsecret libxslt harfbuzz
+    libxml2 libsecret libxslt harfbuzz libpthreadstubs
+    gst-plugins-base
+  ] ++ optional enableGeoLocation geoclue2;
+
+  propagatedBuildInputs = [
+    libsoup gtk3
   ];
 
-  propagatedBuildInputs = [ gtk3 libsoup ];
-
-  #enableParallelBuilding = true; # build problems on Hydra
+  # enableParallelBuilding = true; # build problems on Hydra
 }

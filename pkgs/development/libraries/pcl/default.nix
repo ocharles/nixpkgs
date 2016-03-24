@@ -15,8 +15,9 @@ stdenv.mkDerivation {
   meta = {
     homepage = http://pointclouds.org/;
     description = "Open project for 2D/3D image and point cloud processing";
-    license = "BSD";
+    license = stdenv.lib.licenses.bsd3;
     maintainers = with stdenv.lib.maintainers; [viric];
     platforms = with stdenv.lib.platforms; linux;
+    broken = true;
   };
 }

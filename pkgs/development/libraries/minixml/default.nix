@@ -2,11 +2,11 @@
 
 stdenv.mkDerivation  rec {
   name = "mxml-${version}";
-  version = "2.6";
+  version = "2.9";
 
   src = fetchurl {
-    url = "http://ftp.easysw.com/pub/mxml/${version}/${name}.tar.gz";
-    sha256 = "15cpqr43cwvy1ms67rfav8l9fjgybkaqfq7nhag8qnhd3bd4glxh";
+    url = "http://www.msweet.org/files/project3/${name}.tar.gz";
+    sha256 = "14pzhlfidj5v1qbxy7a59yn4jz9pnjrs2zwalz228jsq7ijm9vfd";
   };
 
   meta = with stdenv.lib; {

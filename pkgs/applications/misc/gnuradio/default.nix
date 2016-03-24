@@ -23,16 +23,16 @@
 
 stdenv.mkDerivation rec {
   name = "gnuradio-${version}";
-  version = "3.7.1";
+  version = "3.7.5.1";
 
   src = fetchurl {
     url = "http://gnuradio.org/releases/gnuradio/${name}.tar.gz";
-    sha256 = "1kfni8vpgr6v9rdiz3zsmwc07qj6zka9x22z2y0y4rak2xnzdxz9";
+    sha256 = "0gg4i8s1z5pcfk8d7n7baxv3lx2cjcizimvbziraj27lcbvpmwar";
   };
 
   buildInputs = [
-    cmake pkgconfig git boost cppunit fftw python swig2 orc lxml qt4 qwt
-    alsaLib SDL libusb1 uhd gsl makeWrapper
+    cmake pkgconfig git boost cppunit fftw python swig2 orc lxml qt4
+    qwt alsaLib SDL libusb1 uhd gsl makeWrapper
   ];
 
   propagatedBuildInputs = [
@@ -51,9 +51,9 @@ stdenv.mkDerivation rec {
   postInstall = ''
     printf "backend : Qt4Agg\n" > "$out/share/gnuradio/matplotlibrc"
 
-    for file in "$out"/bin/*; do
+    for file in "$out"/bin/* "$out"/share/gnuradio/examples/*/*.py; do
         wrapProgram "$file" \
-            --set PYTHONPATH $PYTHONPATH:$(toPythonPath "$out") \
+            --prefix PYTHONPATH : $PYTHONPATH:$(toPythonPath "$out") \
             --set MATPLOTLIBRC "$out/share/gnuradio"
     done
   '';

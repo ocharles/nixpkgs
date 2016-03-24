@@ -1,4 +1,4 @@
-{ stdenv, perl, linuxManualConfig
+{ stdenv, perl, buildLinux
 
 , # The kernel source tarball.
   src
@@ -28,6 +28,7 @@
 }:
 
 assert stdenv.platform.name == "sheevaplug" -> stdenv.platform.uboot != null;
+assert stdenv.isLinux;
 
 let
 
@@ -95,9 +96,11 @@ let
     '';
 
     installPhase = "mv .config $out";
+
+    enableParallelBuilding = true;
   };
 
-  kernel = linuxManualConfig {
+  kernel = buildLinux {
     inherit version modDirVersion src kernelPatches;
 
     configfile = configfile.nativeDrv or configfile;
@@ -109,18 +112,22 @@ let
     crossConfig = { CONFIG_MODULES = "y"; CONFIG_FW_LOADER = "m"; };
   };
 
-  configWithPlatform = kernelPlatform:
-    import ./common-config.nix { inherit stdenv version kernelPlatform extraConfig; };
-
-  config = configWithPlatform stdenv.platform;
-  configCross = configWithPlatform stdenv.cross.platform;
-
   passthru = {
     # Combine the `features' attribute sets of all the kernel patches.
     features = lib.fold (x: y: (x.features or {}) // y) features kernelPatches;
 
     meta = kernel.meta // extraMeta;
+
+    passthru = kernel.passthru // (removeAttrs passthru [ "passthru" "meta" ]);
   };
+
+  configWithPlatform = kernelPlatform: import ./common-config.nix
+    { inherit stdenv version kernelPlatform extraConfig;
+      features = passthru.features; # Ensure we know of all extra patches, etc.
+    };
+
+  config = configWithPlatform stdenv.platform;
+  configCross = configWithPlatform stdenv.cross.platform;
 
   nativeDrv = lib.addPassthru kernel.nativeDrv passthru;
 

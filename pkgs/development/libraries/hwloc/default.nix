@@ -44,7 +44,7 @@ stdenv.mkDerivation rec {
   doCheck = !stdenv.isCygwin;
 
   meta = {
-    description = "hwloc, a portable abstraction of hierarchical architectures for high-performance computing";
+    description = "Portable abstraction of hierarchical architectures for high-performance computing";
 
     longDescription = ''
        hwloc provides a portable abstraction (across OS,
@@ -67,7 +67,7 @@ stdenv.mkDerivation rec {
 
     homepage = http://www.open-mpi.org/projects/hwloc/;
 
-    maintainers = [ stdenv.lib.maintainers.ludo ];
+    maintainers = [ ];
     platforms = stdenv.lib.platforms.all;
   };
 }

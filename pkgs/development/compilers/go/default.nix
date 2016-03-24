@@ -51,7 +51,7 @@ stdenv.mkDerivation {
     sed -i '/TestHostname/areturn' src/pkg/os/os_test.go
   '';
 
-  patches = [ ./cacert.patch ];
+  patches = [ ./cacert.patch ./1_0-opt-error.patch ./1_0-gcc-bug.patch ];
 
   GOOS = "linux";
   GOARCH = if stdenv.system == "i686-linux" then "386"
@@ -59,6 +59,8 @@ stdenv.mkDerivation {
           else if stdenv.system == "armv5tel-linux" then "arm"
           else throw "Unsupported system";
   GOARM = stdenv.lib.optionalString (stdenv.system == "armv5tel-linux") "5";
+
+  NIX_CFLAGS_COMPILE = "-Wno-error=cpp";
 
   installPhase = ''
     mkdir -p "$out/bin"
@@ -83,6 +85,7 @@ stdenv.mkDerivation {
   '';
 
   meta = {
+    branch = "1.0";
     homepage = http://golang.org/;
     description = "The Go Programming language";
     license = "BSD";

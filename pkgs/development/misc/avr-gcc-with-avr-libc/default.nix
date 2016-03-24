@@ -78,10 +78,11 @@ stdenv.mkDerivation {
     '';
   };
 
-  meta = { 
-      description = "AVR developement environment including binutils, avr-gcc and avr-libc";
+  meta = with stdenv.lib; {
+      description = "AVR development environment including binutils, avr-gcc and avr-libc";
       # I've tried compiling the packages separately.. too much hassle. This just works. Fine.
       license =  ["GPL" "LGPL"]; # see single packages ..
       homepage = []; # dito
+      platforms = platforms.linux;
   };
 }

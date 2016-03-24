@@ -1,8 +1,11 @@
-{ stdenv, kernel, elfutils, python, perl, newt, slang, asciidoc, xmlto
+{ lib, stdenv, kernel, elfutils, python, perl, newt, slang, asciidoc, xmlto
 , docbook_xsl, docbook_xml_dtd_45, libxslt, flex, bison, pkgconfig
 , withGtk ? false, gtk ? null }:
 
+with lib;
+
 assert withGtk -> gtk != null;
+assert versionAtLeast kernel.version "3.12";
 
 stdenv.mkDerivation {
   name = "perf-linux-${kernel.version}";
@@ -12,6 +15,7 @@ stdenv.mkDerivation {
   preConfigure = ''
     cd tools/perf
     sed -i s,/usr/include/elfutils,$elfutils/include/elfutils, Makefile
+    ${optionalString (versionOlder kernel.version "3.13") "patch -p1 < ${./perf.diff}"}
     [ -f bash_completion ] && sed -i 's,^have perf,_have perf,' bash_completion
     export makeFlags="DESTDIR=$out $makeFlags"
   '';
@@ -20,6 +24,8 @@ stdenv.mkDerivation {
   nativeBuildInputs = [ asciidoc xmlto docbook_xsl docbook_xml_dtd_45 libxslt flex bison ];
   buildInputs = [ elfutils python perl newt slang pkgconfig] ++
     stdenv.lib.optional withGtk gtk;
+
+  NIX_CFLAGS_COMPILE = "-Wno-error=cpp";
 
   installFlags = "install install-man ASCIIDOC8=1";
 

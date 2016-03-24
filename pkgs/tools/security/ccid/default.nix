@@ -1,10 +1,12 @@
 { stdenv, fetchurl, pcsclite, pkgconfig, libusb1, perl }:
+
 stdenv.mkDerivation rec {
-  name = "ccid-1.4.13";
+  version = "1.4.18";
+  name = "ccid-${version}";
 
   src = fetchurl {
-    url = "http://pkgs.fedoraproject.org/repo/pkgs/pcsc-lite-ccid/ccid-1.4.13.tar.bz2/89c167a873df1f8bc0dc907ce209e5ff/ccid-1.4.13.tar.bz2";
-    sha256 = "1w0mxb5qzps9x2fcggv958mwgwmvfxxj4nspxs67fa7qg7r6yxar";
+    url = "http://ftp.de.debian.org/debian/pool/main/c/ccid/ccid_${version}.orig.tar.bz2";
+    sha256 = "1aj14lkmfaxkhk5swqfgn2x18j7fijxs0jnxnx9cdc9f5mxaknsz";
   };
 
   patchPhase = ''
@@ -17,11 +19,11 @@ stdenv.mkDerivation rec {
 
   buildInputs = [ pcsclite pkgconfig libusb1 ];
 
-  meta = {
+  meta = with stdenv.lib; {
     description = "ccid drivers for pcsclite";
     homepage = http://pcsclite.alioth.debian.org/;
-    license = "GPLv2+";
-    maintainers = with stdenv.lib.maintainers; [viric];
-    platforms = with stdenv.lib.platforms; linux;
+    license = licenses.gpl2Plus;
+    maintainers = with maintainers; [ viric wkennington ];
+    platforms = with platforms; linux;
   };
 }

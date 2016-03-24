@@ -100,13 +100,13 @@ let inherit (builtins) head tail trace; in
                 ${stdenv.preHook}
                 
                 set -e
-                NIX_GCC=${stdenv.gcc}
+                NIX_CC=${stdenv.cc}
                 export SHELL=${stdenv.shell}
                 PATH_DELIMITER=':'
                 
                 # Set up the initial path.
                 PATH=
-                for i in \$NIX_GCC ${toString stdenv.initialPath}; do
+                for i in \$NIX_CC ${toString stdenv.initialPath}; do
                     PATH=\$PATH\${PATH:+\"\${PATH_DELIMITER}\"}\$i/bin
                 done
 
@@ -138,7 +138,7 @@ let inherit (builtins) head tail trace; in
                 }
 
                 pkgs=\"\"
-                for i in \$NIX_GCC ${toString realBuildInputs}; do
+                for i in \$NIX_CC ${toString realBuildInputs}; do
                     findInputs \$i
                 done
 
@@ -545,11 +545,11 @@ let inherit (builtins) head tail trace; in
            mkdir -p $out/share/texmf/fonts/enc/${retrievedName}
            mkdir -p $out/share/texmf/fonts/map/${retrievedName}
 
-        cp *.ttf $out/share/fonts/truetype/public/${retrievedName} || echo No TrueType fonts
-        cp *.otf $out/share/fonts/opentype/public/${retrievedName} || echo No OpenType fonts
-           cp *.{pfm,afm,pfb} $out/share/fonts/type1/public/${retrievedName} || echo No Type1 Fonts
-           cp *.enc $out/share/texmf/fonts/enc/${retrievedName} || echo No fontenc data
-           cp *.map $out/share/texmf/fonts/map/${retrievedName} || echo No fontmap data
+           find -name '*.ttf' -exec cp {} $out/share/fonts/truetype/public/${retrievedName} \;
+           find -name '*.otf' -exec cp {} $out/share/fonts/opentype/public/${retrievedName} \;
+           find -name '*.pfm' -o -name '*.afm' -o -name '*.pfb' -exec cp {} $out/share/fonts/type1/public/${retrievedName} \;
+           find -name '*.enc' -exec cp {} $out/share/texmf/fonts/enc/${retrievedName} \;
+           find -name '*.map' -exec cp {} $out/share/texmf/fonts/map/${retrievedName} \;
    '') ["minInit" "defEnsureDir"];
 
    simplyShare = shareName: fullDepEntry (''

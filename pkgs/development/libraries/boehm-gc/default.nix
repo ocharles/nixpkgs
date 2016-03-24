@@ -1,14 +1,16 @@
-{ stdenv, fetchurl }:
+{ lib, stdenv, fetchurl, enableLargeConfig ? false }:
 
 stdenv.mkDerivation rec {
-  name = "boehm-gc-7.2d";
+  name = "boehm-gc-7.2f";
 
   src = fetchurl {
-    url = http://www.hpl.hp.com/personal/Hans_Boehm/gc/gc_source/gc-7.2d.tar.gz;
-    sha256 = "0phwa5driahnpn79zqff14w9yc8sn3599cxz91m78hqdcpl0mznr";
+    url = http://www.hboehm.info/gc/gc_source/gc-7.2f.tar.gz;
+    sha256 = "119x7p1cqw40mpwj80xfq879l9m1dkc7vbc1f3bz3kvkf8bf6p16";
   };
 
-  configureFlags = "--enable-cplusplus";
+  configureFlags =
+    [ "--enable-cplusplus" ]
+    ++ lib.optional enableLargeConfig "--enable-large-config";
 
   doCheck = true;
 
@@ -35,12 +37,12 @@ stdenv.mkDerivation rec {
       C or C++ programs, though that is not its primary goal.
     '';
 
-    homepage = http://www.hpl.hp.com/personal/Hans_Boehm/gc/;
+    homepage = http://hboehm.info/gc/;
 
     # non-copyleft, X11-style license
-    license = "http://www.hpl.hp.com/personal/Hans_Boehm/gc/license.txt";
+    license = http://hboehm.info/gc/license.txt;
 
-    maintainers = [ stdenv.lib.maintainers.ludo ];
+    maintainers = [ ];
     platforms = stdenv.lib.platforms.all;
   };
 }

@@ -1,6 +1,12 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
+
+let
+
+  tzdir = "${pkgs.tzdata}/share/zoneinfo";
+
+in
 
 {
   options = {
@@ -8,10 +14,14 @@ with pkgs.lib;
     time = {
 
       timeZone = mkOption {
-        default = "CET";
+        default = "UTC";
         type = types.str;
         example = "America/New_York";
-        description = "The time zone used when displaying times and dates.";
+        description = ''
+          The time zone used when displaying times and dates. See <link
+          xlink:href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"/>
+          for a comprehensive list of possible values for this setting.
+        '';
       };
 
       hardwareClockInLocalTime = mkOption {
@@ -24,10 +34,12 @@ with pkgs.lib;
 
   config = {
 
-    environment.variables.TZDIR = "/etc/zoneinfo";
+    environment.sessionVariables.TZDIR = "/etc/zoneinfo";
+
+    systemd.globalEnvironment.TZDIR = tzdir;
 
     environment.etc.localtime =
-      { source = "${pkgs.tzdata}/share/zoneinfo/${config.time.timeZone}";
+      { source = "${tzdir}/${config.time.timeZone}";
         mode = "direct-symlink";
       };
 

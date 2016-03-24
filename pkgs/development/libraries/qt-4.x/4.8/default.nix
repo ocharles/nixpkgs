@@ -1,4 +1,5 @@
-{ stdenv, fetchurl, substituteAll, libXrender, libXinerama, libXcursor, libXmu, libXv, libXext
+{ stdenv, fetchurl, fetchpatch, substituteAll
+, libXrender, libXinerama, libXcursor, libXmu, libXv, libXext
 , libXfixes, libXrandr, libSM, freetype, fontconfig, zlib, libjpeg, libpng
 , libmng, which, mesaSupported, mesa, mesa_glu, openssl, dbus, cups, pkgconfig
 , libtiff, glib, icu, mysql, postgresql, sqlite, perl, coreutils, libXi
@@ -16,7 +17,7 @@ with stdenv.lib;
 
 let
   v_maj = "4.8";
-  v_min = "5";
+  v_min = "6";
   vers = "${v_maj}.${v_min}";
 in
 
@@ -30,7 +31,7 @@ stdenv.mkDerivation rec {
   src = fetchurl {
     url = "http://download.qt-project.org/official_releases/qt/"
       + "${v_maj}/${vers}/qt-everywhere-opensource-src-${vers}.tar.gz";
-    sha256 = "0f51dbgn1dcck8pqimls2qyf1pfmsmyknh767cvw87c3d218ywpb";
+    sha256 = "0b036iqgmbbv37dgwwfihw3mihjbnw3kb5kaisdy0qi8nn8xs54b";
   };
 
   # The version property must be kept because it will be included into the QtSDK package name
@@ -44,25 +45,15 @@ stdenv.mkDerivation rec {
     # remove impure reference to /usr/lib/libstdc++.6.dylib
     # there might be more references, but this is the only one I could find
     substituteInPlace tools/macdeployqt/tests/tst_deployment_mac.cpp \
-      --replace /usr/lib/libstdc++.6.dylib "${stdenv.gcc}/lib/libstdc++.6.dylib"
+      --replace /usr/lib/libstdc++.6.dylib "${stdenv.cc}/lib/libstdc++.6.dylib"
   '';
 
   patches =
     [ ./glib-2.32.patch
-      (fetchurl {
-        name = "CVE-2013-4549.patch";
-        url = "https://projects.archlinux.org/svntogit/packages.git/plain/trunk/CVE-2013-4549.patch?h=packages/qt4";
-        sha256 = "0xz60fmspzvsyhd0f013pvh2bbm87976128fphbckfcwiqr1hanw";
-      })
-      (fetchurl {
-        name = "libmng2.patch";
-        url = "https://projects.archlinux.org/svntogit/packages.git/plain/trunk/libmng2.patch?h=packages/qt4";
-        sha256 = "1sgnrl3qzr370ad5bqc66f7sp0gk046jnsy1811x24f16cs04xzh";
-      })
       (substituteAll {
         src = ./dlopen-absolute-paths.diff;
         inherit cups icu libXfixes;
-        glibc = stdenv.gcc.libc;
+        glibc = stdenv.cc.libc;
         openglDriver = if mesaSupported then mesa.driverLink else "/no-such-path";
       })
     ] ++ stdenv.lib.optional gtkStyle (substituteAll {
@@ -74,7 +65,13 @@ stdenv.mkDerivation rec {
     ++ stdenv.lib.optional flashplayerFix (substituteAll {
         src = ./dlopen-webkit-nsplugin.diff;
         inherit gtk gdk_pixbuf;
-      });
+      })
+    ++ [(fetchpatch {
+        name = "fix-medium-font.patch";
+        url = "http://anonscm.debian.org/cgit/pkg-kde/qt/qt4-x11.git/plain/debian/patches/"
+          + "kubuntu_39_fix_medium_font.diff?id=21b342d71c19e6d68b649947f913410fe6129ea4";
+        sha256 = "0bli44chn03c2y70w1n8l7ss4ya0b40jqqav8yxrykayi01yf95j";
+      })];
 
   preConfigure = ''
     export LD_LIBRARY_PATH="`pwd`/lib:$LD_LIBRARY_PATH"
@@ -88,8 +85,6 @@ stdenv.mkDerivation rec {
       -translationdir $out/share/${name}/translations
     "
   '' + optionalString stdenv.isDarwin ''
-    export CXX=clang++
-    export CC=clang
     sed -i 's/QMAKE_CC = gcc/QMAKE_CC = clang/' mkspecs/common/g++-base.conf
     sed -i 's/QMAKE_CXX = g++/QMAKE_CXX = clang++/' mkspecs/common/g++-base.conf
   '';
@@ -148,8 +143,7 @@ stdenv.mkDerivation rec {
   '';
 
   crossAttrs = let
-    isMingw = stdenv.cross.config == "i686-pc-mingw32" ||
-      stdenv.cross.config == "x86_64-w64-mingw32";
+    isMingw = stdenv.cross.libc == "msvcrt";
   in {
     # I've not tried any case other than i686-pc-mingw32.
     # -nomake tools:   it fails linking some asian language symbols
@@ -184,7 +178,7 @@ stdenv.mkDerivation rec {
   meta = {
     homepage    = http://qt-project.org/;
     description = "A cross-platform application framework for C++";
-    license     = "GPL/LGPL";
+    license     = licenses.lgpl21Plus; # or gpl3
     maintainers = with maintainers; [ lovek323 phreedom sander urkud ];
     platforms   = platforms.linux;
   };

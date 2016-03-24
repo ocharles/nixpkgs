@@ -1,16 +1,12 @@
-{config, pkgs, ...}:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 let
   cfg = config.services.logrotate;
 
   configFile = pkgs.writeText "logrotate.conf"
     cfg.config;
-
-  cronJob = ''
-    5 * * * * root ${pkgs.logrotate}/sbin/logrotate ${configFile}
-  '';
 
 in
 {
@@ -25,6 +21,7 @@ in
 
       config = mkOption {
         default = "";
+        type = types.lines;
         description = ''
           The contents of the logrotate config file
         '';
@@ -33,6 +30,16 @@ in
   };
 
   config = mkIf cfg.enable {
-    services.cron.systemCronJobs = [ cronJob ];
+    systemd.services.logrotate = {
+      description   = "Logrotate Service";
+      wantedBy      = [ "multi-user.target" ];
+      startAt       = "*-*-* *:05:00";
+
+      serviceConfig.Restart = "no";
+      serviceConfig.User    = "root";
+      script = ''
+        exec ${pkgs.logrotate}/sbin/logrotate ${configFile}
+      '';
+    };
   };
 }

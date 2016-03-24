@@ -1,19 +1,21 @@
-{ stdenv, fetchurl, pkgconfig, udev, utillinux, coreutils }:
+{ stdenv, fetchurl, pkgconfig, udev, utillinux, coreutils, enable_dmeventd ? false }:
 
 let
-  v = "2.02.104";
+  version = "2.02.114";
 in
 
 stdenv.mkDerivation {
-  name = "lvm2-${v}";
+  name = "lvm2-${version}";
 
   src = fetchurl {
-    url = "ftp://sources.redhat.com/pub/lvm2/releases/LVM2.${v}.tgz";
-    sha256 = "1xa7hvp8bsx96nncgksxrqxaqcgipfmmpr8aysayb8aisyjvas0d";
+    url = "ftp://sources.redhat.com/pub/lvm2/releases/LVM2.${version}.tgz";
+    sha256 = "19bl536yylyi873p46prfwv086bg0sg0q5l4c7x6lnlwzfnb176y";
   };
 
   configureFlags =
-    "--disable-readline --enable-udev_rules --enable-udev_sync --enable-pkgconfig --enable-applib";
+    "--disable-readline --enable-udev_rules --enable-udev_sync --enable-pkgconfig --enable-applib --enable-cmdlib"
+      + (stdenv.lib.optionalString enable_dmeventd " --enable-dmeventd")
+      ;
 
   buildInputs = [ pkgconfig udev ];
 
@@ -28,6 +30,8 @@ stdenv.mkDerivation {
       sed -i /DEFAULT_SYS_DIR/d Makefile.in
       sed -i /DEFAULT_PROFILE_DIR/d conf/Makefile.in
     '';
+
+  enableParallelBuilding = true;
 
   #patches = [ ./purity.patch ];
 
@@ -52,5 +56,8 @@ stdenv.mkDerivation {
     homepage = http://sourceware.org/lvm2/;
     descriptions = "Tools to support Logical Volume Management (LVM) on Linux";
     platforms = stdenv.lib.platforms.linux;
+    maintainers = with stdenv.lib.maintainers; [raskin];
+    inherit version;
+    downloadPage = "ftp://sources.redhat.com/pub/lvm2/";
   };
 }

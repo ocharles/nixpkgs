@@ -1,11 +1,11 @@
 { stdenv, fetchurl, pkgconfig, libpthreadstubs, libpciaccess, udev }:
 
 stdenv.mkDerivation rec {
-  name = "libdrm-2.4.50";
+  name = "libdrm-2.4.58";
 
   src = fetchurl {
     url = "http://dri.freedesktop.org/libdrm/${name}.tar.bz2";
-    sha256 = "0idh6cwqr2rilig7vygb3gxvivchp0q1iq4md79jq340v96d48rq";
+    sha256 = "b155fae6b9c9a3b02ef8b77f58c7c219194c996a4018dc55ba66c03996a365dd";
   };
 
   nativeBuildInputs = [ pkgconfig ];
@@ -27,6 +27,6 @@ stdenv.mkDerivation rec {
     description = "Library for accessing the kernel's Direct Rendering Manager";
     license = "bsd";
     maintainers = [ stdenv.lib.maintainers.urkud ];
-    platforms = stdenv.lib.platforms.linux;
+    platforms = stdenv.lib.platforms.unix;
   };
 }

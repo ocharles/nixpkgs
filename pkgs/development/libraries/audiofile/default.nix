@@ -3,7 +3,7 @@
 stdenv.mkDerivation rec {
   name = "audiofile-0.3.6";
 
-  buildInputs = stdenv.lib.optional (!stdenv.isDarwin) alsaLib;
+  nativeBuildInputs = stdenv.lib.optional stdenv.isLinux alsaLib;
 
   src = fetchurl {
     url = "http://audiofile.68k.org/${name}.tar.gz";
@@ -14,7 +14,7 @@ stdenv.mkDerivation rec {
     description = "Library for reading and writing audio files in various formats";
     homepage    = http://www.68k.org/~michael/audiofile/; 
     license     = licenses.lgpl21Plus;
-    maintainers = with maintainers; [ lovek323 shlevy ];
+    maintainers = with maintainers; [ lovek323 ];
     platforms   = platforms.unix;
   };
 }

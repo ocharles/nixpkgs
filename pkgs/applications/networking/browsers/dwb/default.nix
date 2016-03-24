@@ -1,35 +1,33 @@
-{ stdenv, fetchgit, pkgconfig, makeWrapper, libsoup, webkit, gtk3, gnutls, json_c,
-  m4, glib_networking, gsettings_desktop_schemas }:
+{ stdenv, fetchgit, pkgconfig, makeWrapper, libsoup, webkitgtk2, gtk2, gnutls, json_c,
+  m4, glib_networking, gsettings_desktop_schemas, dconf }:
 
 stdenv.mkDerivation {
-  name = "dwb-0.1";
+  name = "dwb-2014-12-15";
 
   src = fetchgit {
-    url = "https://bitbucket.org/portix/dwb.git";
-    rev = "84a8621787baded72e84afdd5cdda278cb81e007";
-    sha256 = "5a32f3c21ad59b43935a16108244f84d260fafaea9b93d41e8de9ba9089ee7b0";
+    url = "https://bitbucket.org/0mark/dwb_collect";
+    rev = "b94785470b11a0b6b52eecfc3bae276796b83a0d";
+    sha256 = "09xbifj223mflj62rfhi6q7cvnkpkzkwyyqhkm8w067pdscdhyvs";
   };
 
-  buildInputs = [ pkgconfig makeWrapper libsoup webkit gtk3 gnutls json_c m4  ];
+  buildInputs = [ pkgconfig makeWrapper gsettings_desktop_schemas libsoup webkitgtk2 gtk2 gnutls json_c m4 ];
 
   # There are Xlib and gtk warnings therefore I have set Wno-error
-  preBuild=''
-    makeFlagsArray=(CPPFLAGS="-Wno-error" GTK=3 PREFIX=$out);
-  '';
+  makeFlags = ''PREFIX=$(out) GTK=2 CPPFLAGS="-Wno-error"'';
 
-  postInstall=''
+  preFixup=''
     wrapProgram "$out/bin/dwb" \
-     --prefix GIO_EXTRA_MODULES : "${glib_networking}/lib/gio/modules" \
-     --prefix XDG_DATA_DIRS : "${gsettings_desktop_schemas}/share:$out/share"
+     --prefix GIO_EXTRA_MODULES : "${glib_networking}/lib/gio/modules:${dconf}/lib/gio/modules" \
+     --prefix XDG_DATA_DIRS : "$GSETTINGS_SCHEMAS_PATH:$out/share"
     wrapProgram "$out/bin/dwbem" \
      --prefix GIO_EXTRA_MODULES : "${glib_networking}/lib/gio/modules"
   '';
 
-  meta = {
+  meta = with stdenv.lib; {
     homepage = http://portix.bitbucket.org/dwb/;
     description = "A lightweight web browser based on the webkit web browser engine and the gtk toolkit";
-    platforms = stdenv.lib.platforms.mesaPlatforms;
-    maintainers = [ stdenv.lib.maintainers.pSub ];
-    license = "GPL";
+    platforms = platforms.mesaPlatforms;
+    maintainers = with maintainers;[ pSub ];
+    license = licenses.gpl3;
   };
 }

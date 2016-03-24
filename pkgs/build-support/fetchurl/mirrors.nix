@@ -20,6 +20,12 @@ rec {
     http://kent.dl.sourceforge.net/sourceforge/
   ];
 
+  # SourceForge.jp.
+  sourceforgejp = [
+    http://osdn.dl.sourceforge.jp/
+    http://jaist.dl.sourceforge.jp/
+  ];
+
   # GNU (http://www.gnu.org/prep/ftp.html).
   gnu = [
     # This one redirects to a (supposedly) nearby and (supposedly) up-to-date
@@ -121,7 +127,7 @@ rec {
     ftp://mirror.csclub.uwaterloo.ca/nongnu/
     ftp://mirror.publicns.net/pub/nongnu/
     ftp://savannah.c3sl.ufpr.br/
-    http://download.savannah.gnu.org/
+    http://download.savannah.gnu.org/releases/
     http://ftp.cc.uoc.gr/mirrors/nongnu.org/
     http://ftp.twaren.net/Unix/NonGNU/
     http://mirror.csclub.uwaterloo.ca/nongnu/
@@ -141,10 +147,10 @@ rec {
 
   # ImageMagick mirrors, see http://www.imagemagick.org/script/download.php.
   imagemagick = [
-    http://ftp.nluug.nl/pub/ImageMagick/
-    ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick/
+    ftp://ftp.nluug.nl/pub/ImageMagick/
     ftp://ftp.imagemagick.org/pub/ImageMagick/
     ftp://ftp.imagemagick.net/pub/ImageMagick/
+    ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick/
   ];
 
   # CPAN mirrors.
@@ -159,7 +165,7 @@ rec {
 
   # Debian.
   debian = [
-    #ftp://ftp.au.debian.org/debian/
+    ftp://ftp.au.debian.org/debian/
     ftp://ftp.de.debian.org/debian/
     ftp://ftp.es.debian.org/debian/
     ftp://ftp.fr.debian.org/debian/
@@ -167,6 +173,7 @@ rec {
     ftp://ftp.nl.debian.org/debian/
     ftp://ftp.ru.debian.org/debian/
     ftp://ftp.debian.org/debian/
+    http://ftp.debian.org/debian/
     http://archive.debian.org/debian-archive/debian/
     ftp://ftp.funet.fi/pub/mirrors/ftp.debian.org/debian/
   ];
@@ -180,11 +187,17 @@ rec {
   ];
 
   # Fedora (please only add full mirrors that carry old Fedora distributions as well).
+  # See: https://mirrors.fedoraproject.org/publiclist (but not all carry old content).
   fedora = [
+    http://archives.fedoraproject.org/pub/archive/fedora/
+    http://fedora.osuosl.org/
     http://ftp.nluug.nl/pub/os/Linux/distr/fedora/
     http://ftp.funet.fi/pub/mirrors/ftp.redhat.com/pub/fedora/
-    http://download.fedora.redhat.com/pub/fedora/
-    http://archives.fedoraproject.org/pub/archive/fedora/
+    http://fedora.bhs.mirrors.ovh.net/
+    http://mirror.csclub.uwaterloo.ca/fedora/
+    http://ftp.linux.cz/pub/linux/fedora/
+    http://ftp.heanet.ie/pub/fedora/
+    http://mirror.1000mbps.com/fedora/
   ];
 
   # Old SUSE distributions.  Unfortunately there is no master site,
@@ -263,6 +276,7 @@ rec {
   postgresql = [
     ftp://ftp.postgresql.org/pub/
     ftp://ftp-archives.postgresql.org/pub/
+    http://ftp.postgresql.org/pub/
   ];
 
   metalab = [
@@ -293,7 +307,6 @@ rec {
     http://dirichlet.mat.puc.cl/
     http://ftp.ctex.org/mirrors/CRAN/
     http://mirror.bjtu.edu.cn/cran
-    http://cran.dataguru.cn/
     http://mirrors.ustc.edu.cn/CRAN/
     http://mirrors.xmu.edu.cn/CRAN/
     http://www.laqee.unal.edu.co/CRAN/
@@ -367,4 +380,55 @@ rec {
     http://lib.stat.cmu.edu/
   ];
 
+  # Hackage mirrors
+  hackage = [
+    http://hackage.haskell.org/package/
+    http://hdiff.luite.com/packages/archive/package/
+  ];
+
+  # Roy marples mirrors
+  roy = [
+    http://roy.marples.name/downloads/
+    http://roy.aydogan.net/
+    http://cflags.cc/roy/
+  ];
+
+  # Sage mirrors (http://www.sagemath.org/mirrors.html)
+  sagemath = [
+    http://boxen.math.washington.edu/home/sagemath/sage-mirror/src/
+    http://echidna.maths.usyd.edu.au/sage/src/
+    http://ftp.iitm.ac.in/sage/src/
+    http://ftp.kaist.ac.kr/sage/src/
+    http://ftp.riken.jp/sagemath/src/
+    http://ftp.tsukuba.wide.ad.jp/software/sage/src/
+    http://jambu.spms.ntu.edu.sg/sage/src/
+    http://linorg.usp.br/sage/src/
+    http://mirror.aarnet.edu.au/pub/sage/src/
+    http://mirror.clibre.uqam.ca/sage/src/
+    http://mirror.hust.edu.cn/sagemath/src/
+    http://mirror.switch.ch/mirror/sagemath/src/
+    http://mirror.yandex.ru/mirrors/sage.math.washington.edu/src/
+    http://mirrors.fe.up.pt/pub/sage/src/
+    http://mirrors.hustunique.com/sagemath/src/
+    http://mirrors.ustc.edu.cn/sagemath/src/
+    http://mirrors.xmission.com/sage/src/
+    http://sage.asis.io/src/
+    http://sage.mirror.garr.it/mirrors/sage/src/
+    http://sage.yasar.edu.tr/src/
+    http://sagemath.c3sl.ufpr.br/src/
+    http://sagemath.polytechnic.edu.na/src/
+    http://sunsite.rediris.es/mirror/sagemath/src/
+    http://www-ftp.lip6.fr/pub/math/sagemath/src/
+    http://www.mirrorservice.org/sites/www.sagemath.org/src/
+
+    # Old versions
+    http://www.cecm.sfu.ca/sage/src/
+    http://sagemath.org/src-old/
+  ];
+
+  # MySQL mirrors
+  mysql = [
+    http://mysql.mirrors.pair.com/Downloads/
+    http://cdn.mysql.com/Downloads/
+  ];
 }

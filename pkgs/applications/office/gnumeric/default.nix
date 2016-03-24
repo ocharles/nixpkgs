@@ -3,11 +3,11 @@
 }:
 
 stdenv.mkDerivation rec {
-  name = "gnumeric-1.12.9";
+  name = "gnumeric-1.12.18";
 
   src = fetchurl {
     url = "mirror://gnome/sources/gnumeric/1.12/${name}.tar.xz";
-    sha256 = "1rv2ifw6rp0iza4fkf3bffvdkyi77dwvzdnvcbpqcyn2kxfsvlsc";
+    sha256 = "402224f858cfa4e91503ab1be0491fa3322713dabe56b6eae171def8b736d9e9";
   };
 
   preConfigure = ''sed -i 's/\(SUBDIRS.*\) doc/\1/' Makefile.in''; # fails when installing docs
@@ -20,14 +20,17 @@ stdenv.mkDerivation rec {
     goffice gtk3 makeWrapper
   ];
 
-  postInstall = ''
-    wrapProgram "$out"/bin/gnumeric-* \
-      --prefix XDG_DATA_DIRS : "${gtk3}/share:${gnome_icon_theme}/share"
+  preFixup = ''
+    for f in "$out"/bin/gnumeric-*; do
+      wrapProgram $f \
+        --prefix XDG_DATA_DIRS : "$XDG_ICON_DIRS:$GSETTINGS_SCHEMAS_PATH"
+    done
+    rm $out/share/icons/hicolor/icon-theme.cache
   '';
 
   meta = with stdenv.lib; {
     description = "The GNOME Office Spreadsheet";
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
     homepage = http://projects.gnome.org/gnumeric/;
     platforms = platforms.linux;
     maintainers = [ maintainers.vcunat ];

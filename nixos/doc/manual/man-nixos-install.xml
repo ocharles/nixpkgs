@@ -11,12 +11,29 @@
 
 <refnamediv>
   <refname><command>nixos-install</command></refname>
-  <refpurpose>install NixOS</refpurpose>
+  <refpurpose>install bootloader and NixOS</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
   <cmdsynopsis>
     <command>nixos-install</command>
+    <arg>
+      <arg choice='plain'><option>-I</option></arg>
+      <replaceable>path</replaceable>
+    </arg>
+    <arg>
+      <arg choice='plain'><option>--root</option></arg>
+      <replaceable>root</replaceable>
+    </arg>
+    <arg>
+      <arg choice='plain'><option>--show-trace</option></arg>
+    </arg>
+    <arg>
+      <arg choice='plain'><option>--chroot</option></arg>
+    </arg>
+    <arg>
+      <arg choice='plain'><option>--help</option></arg>
+    </arg>
   </cmdsynopsis>
 </refsynopsisdiv>
 
@@ -42,6 +59,9 @@ the following steps:
   and generates a GRUB configuration file that boots into the NixOS
   configuration just installed.</para></listitem>
 
+  <listitem><para>It prompts you for a password for the root
+  account.</para></listitem>
+
 </itemizedlist>
 
 </para>
@@ -49,6 +69,56 @@ the following steps:
 <para>This command is idempotent: if it is interrupted or fails due to
 a temporary problem (e.g. a network issue), you can safely re-run
 it.</para>
+
+</refsection>
+
+<refsection><title>Options</title>
+
+<para>This command accepts the following options:</para>
+
+<variablelist>
+
+  <varlistentry>
+    <term><option>--root</option></term>
+    <listitem>
+      <para>Defaults to <filename>/mnt</filename>. If this option is given, treat the directory
+      <replaceable>root</replaceable> as the root of the NixOS installation.
+      </para>
+    </listitem>
+  </varlistentry>
+
+  <varlistentry>
+    <term><option>-I</option></term>
+    <listitem>
+      <para>Add a path to the Nix expression search path. This option may be given multiple times.
+        See the NIX_PATH environment variable for information on the semantics of the Nix search path.
+        Paths added through <replaceable>-I</replaceable> take precedence over NIX_PATH.</para>
+    </listitem>
+  </varlistentry>
+
+  <varlistentry>
+    <term><option>--show-trace</option></term>
+    <listitem>
+      <para>Causes Nix to print out a stack trace in case of Nix expression evaluation errors.</para>
+    </listitem>
+  </varlistentry>
+
+  <varlistentry>
+    <term><option>--chroot</option></term>
+    <listitem>
+      <para>Chroot into given installation. Any additional arguments passed are going to be executed inside the chroot.
+      </para>
+    </listitem>
+  </varlistentry>
+
+  <varlistentry>
+    <term><option>--help</option></term>
+    <listitem>
+      <para>Synonym for <command>man nixos-install</command>.</para>
+    </listitem>
+  </varlistentry>
+
+</variablelist>
 
 </refsection>
 
@@ -69,6 +139,7 @@ $ mount /dev/sda1 /mnt
 $ nixos-generate-config --root /mnt
 $ # edit /mnt/etc/nixos/configuration.nix
 $ nixos-install
+$ reboot
 </screen>
 
 </para>

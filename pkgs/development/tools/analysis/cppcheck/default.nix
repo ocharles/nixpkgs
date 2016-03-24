@@ -4,17 +4,21 @@
 
 let
   name = "cppcheck";
-  version = "1.63";
+  version = "1.67";
 in
 stdenv.mkDerivation {
   name = "${name}-${version}";
 
   src = fetchurl {
     url = "mirror://sourceforge/${name}/${name}-${version}.tar.bz2";
-    sha256 = "0r10z44qydqxxxlxiggl2nzksd3gkb7bp784dfmpnnr1jd2zqjwj";
+    sha256 = "1f9azv714mk37mjij29nfyd3hizsnj6wry1mmv7kxj0i1k7w0532";
   };
 
-  configurePhase = "makeFlags=PREFIX=$out";
+  configurePhase = ''
+    makeFlags="PREFIX=$out CFGDIR=$out/cfg"
+  '';
+
+  postInstall = "cp -r cfg $out/cfg";
 
   meta = {
     description = "Check C/C++ code for memory leaks, mismatching allocation-deallocation, buffer overrun and more";

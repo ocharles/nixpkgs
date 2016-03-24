@@ -17,8 +17,8 @@ stdenv.mkDerivation {
     ''
       for i in bin/*; do
           patchelf \
-              --set-interpreter "$(cat $NIX_GCC/nix-support/dynamic-linker)" \
-              --set-rpath ${stdenv.lib.makeLibraryPath [ libX11 libXext libSM ]}:$(cat $NIX_GCC/nix-support/orig-gcc)/lib \
+              --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
+              --set-rpath ${stdenv.lib.makeLibraryPath [ libX11 libXext libSM ]}:$(cat $NIX_CC/nix-support/orig-gcc)/lib \
               $i
       done
     '';
@@ -28,11 +28,14 @@ stdenv.mkDerivation {
       mkdir -p $out
       cp -prvd * $out/
       wrapProgram $out/bin/ib2012ux --prefix PATH : ${xdg_utils}/bin \
-                                    --prefix LD_PRELOAD : $(cat $NIX_GCC/nix-support/orig-gcc)/lib/libgcc_s.so.1
+                                    --prefix LD_PRELOAD : $(cat $NIX_CC/nix-support/orig-gcc)/lib/libgcc_s.so.1
     '';
 
   meta = {
     description = "Elektronische aangifte IB 2012 (Dutch Tax Return Program)";
     url = http://www.belastingdienst.nl/particulier/aangifte2012/download/;
+    license = stdenv.lib.licenses.unfree;
+    platforms = stdenv.lib.platforms.linux;
+    hydraPlatforms = [];
   };
 }

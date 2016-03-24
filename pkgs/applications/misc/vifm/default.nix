@@ -1,19 +1,18 @@
-{ pkgs, fetchurl, stdenv, ncurses, utillinux, file, libX11 }:
+{ pkgs, fetchurl, stdenv, ncurses, utillinux, file, libX11, which, groff }:
 
 let
   name = "vifm-${version}";
-  version = "0.7.6";
+  version = "0.7.8";
 
 in stdenv.mkDerivation {
   inherit name;
 
   src = fetchurl {
-    url="mirror://sourceforge/project/vifm/vifm/${name}.tar.bz2";
-    sha256 ="03v50hmgfvrci5fz31zmklmp6ix7qpqnhvm6639wbk3g5mcrh5w6";
+    url = "mirror://sourceforge/project/vifm/vifm/${name}.tar.bz2";
+    sha256 = "00vnkr60ci6qwh95kzx399xm97g26svxl9i0y77qv99q41nb5ysx";
   };
 
-  #phaseNames = ["doConfigure" "doMakeInstall"];
-  buildInputs = [ utillinux ncurses file libX11 ];
+  buildInputs = [ utillinux ncurses file libX11 which groff ];
 
   meta = {
     description = "A vi-like file manager";

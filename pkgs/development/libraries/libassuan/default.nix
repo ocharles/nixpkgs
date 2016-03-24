@@ -1,11 +1,11 @@
 { fetchurl, stdenv, pth, libgpgerror }:
 
 stdenv.mkDerivation rec {
-  name = "libassuan-2.0.3";
+  name = "libassuan-2.2.0";
 
   src = fetchurl {
     url = "mirror://gnupg/libassuan/${name}.tar.bz2";
-    sha256 = "06xckkvxxlx7cj77803m8x58gxksap4k8yhspc5cqsy7fhinimds";
+    sha256 = "1ikf9whfi7rg71qa610ynyv12qrw20zkn7zxgvvr9dp41gbqxxbx";
   };
 
   propagatedBuildInputs = [ libgpgerror pth ];
@@ -13,7 +13,7 @@ stdenv.mkDerivation rec {
   doCheck = true;
 
   meta = {
-    description = "Libassuan, the IPC library used by GnuPG and related software";
+    description = "IPC library used by GnuPG and related software";
 
     longDescription = ''
       Libassuan is a small library implementing the so-called Assuan
@@ -23,7 +23,7 @@ stdenv.mkDerivation rec {
     '';
 
     homepage = http://gnupg.org;
-    license = "LGPLv2+";
+    license = stdenv.lib.licenses.lgpl2Plus;
     platforms = stdenv.lib.platforms.all;
   };
 }

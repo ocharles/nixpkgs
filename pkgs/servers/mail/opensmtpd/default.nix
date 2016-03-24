@@ -1,14 +1,14 @@
-{ stdenv, fetchurl, libevent, zlib, openssl, db4, bison, pam }:
+{ stdenv, fetchurl, libevent, zlib, openssl, db, bison, pam }:
 
 stdenv.mkDerivation rec {
   name = "opensmtpd-${version}";
-  version = "201307151923p1";
+  version = "5.4.2p1";
 
-  buildInputs = [ libevent zlib openssl db4 bison pam ];
+  buildInputs = [ libevent zlib openssl db bison pam ];
 
   src = fetchurl {
     url = "http://www.opensmtpd.org/archives/${name}.tar.gz";
-    sha256 = "0cggq60zzz5mgj093pmgwjp4bm6znnhyv6ibp1vhkba7cxjavr4g";
+    sha256 = "18nrzfjhv9znb5dbhc5k3fi31a3vr1r8j36q3fzghkh47n6z9yjg";
   };  
 
   configureFlags = [ 
@@ -18,13 +18,14 @@ stdenv.mkDerivation rec {
     "--with-sock-dir=/run"
     "--with-privsep-user=smtpd"
     "--with-queue-user=smtpq"
+    "--with-ca-file=/etc/ssl/certs/ca-bundle.crt"
   ];  
 
   meta = {
-    homepage = "http://www.postfix.org/";
+    homepage = https://www.opensmtpd.org/;
     description = ''
       A free implementation of the server-side SMTP protocol as defined by
-      RFC 5321, with some additional standard extensions.
+      RFC 5321, with some additional standard extensions
     '';
     license = stdenv.lib.licenses.isc;
     platforms = stdenv.lib.platforms.linux;

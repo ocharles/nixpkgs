@@ -140,12 +140,21 @@ in {
     };
   };
 
-  pt = buildDict {
-    shortName = "pt-0.50-1";
+  pt_BR = buildDict {
+    shortName = "pt_BR-20090702";
+    fullName = "Brazilian Portuguese";
+    src = fetchurl {
+      url = mirror://gnu/aspell/dict/pt_BR/aspell6-pt_BR-20090702-0.tar.bz2;
+      sha256 = "1y09lx9zf2rnp55r16b2vgj953l3538z1vaqgflg9mdvm555bz3p";
+    };
+  };
+
+  pt_PT = buildDict {
+    shortName = "pt_PT-20070510";
     fullName = "Portuguese";
     src = fetchurl {
-      url = mirror://gnu/aspell/dict/pt/aspell-pt-0.50-1.tar.bz2;
-      sha256 = "07xzlnxxzadqsapng29p2gdwj0bijv10wpjnqlwzmkxnx6fxzkcy";
+      url = mirror://gnu/aspell/dict/pt_PT/aspell6-pt_PT-20070510-0.tar.bz2;
+      sha256 = "1mnr994cwlag6shy8865ky99lymysiln07mbldcncahg90dagdxq";
     };
   };
 
@@ -166,5 +175,15 @@ in {
       sha256 = "02jwkjhr32kvyibnyzgx3smbnm576jwdzg3avdf6zxwckhy5fw4v";
     };
   };
+
+  sk = buildDict {
+    shortName = "sk-2.01-2";
+    fullName = "Slovak";
+    src = fetchurl {
+      url = mirror://gnu/aspell/dict/sk/aspell6-sk-2.01-2.tar.bz2;
+      sha256 = "19k0m1v5pcf7xr4lxgjkzqkdlks8nyb13bvi1n7521f3i4lhma66";
+    };
+  };
+
 
 }

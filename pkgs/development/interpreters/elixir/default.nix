@@ -1,34 +1,39 @@
-{ stdenv, fetchurl, erlang, rebar, makeWrapper, coreutils }:
+{ stdenv, fetchurl, erlang, rebar, makeWrapper, coreutils, curl, bash, cacert }:
 
 let
-  version = "0.12.0";
+  version = "1.0.2";
 in
 stdenv.mkDerivation {
   name = "elixir-${version}";
 
   src = fetchurl {
     url = "https://github.com/elixir-lang/elixir/archive/v${version}.tar.gz";
-    sha256 = "0cir2y36zljwphiqyz8xmq7qq0f094jmfy3qwk3wdm05c05nqnc8";
+    sha256 = "6156ee396e85045358d11a6839e157e8fa9573b7414bddbd2c91843ed2b4b962";
   };
 
   buildInputs = [ erlang rebar makeWrapper ];
 
   preBuild = ''
-    substituteInPlace rebar \
-      --replace "/usr/bin/env escript" ${erlang}/bin/escript
+    # The build process uses ./rebar. Link it to the nixpkgs rebar
+    rm -v rebar
+    ln -s ${rebar}/bin/rebar rebar
+
     substituteInPlace Makefile \
-      --replace '$(shell echo `pwd`/rebar)' ${rebar}/bin/rebar \
       --replace "/usr/local" $out
+    substituteInPlace bin/mix \
+      --replace "/usr/bin/env elixir" "$out/bin/elixir"
   '';
 
   postFixup = ''
-    # Elixirs binaries are shell scripts which run erl. This adds some
-    # stuff to PATH so the scripts run without problems.
+    # Elixir binaries are shell scripts which run erl. Add some stuff
+    # to PATH so the scripts can run without problems.
 
-    for f in $out/bin/*
-    do
+    for f in $out/bin/*; do
+     b=$(basename $f)
+      if [ $b == "mix" ]; then continue; fi
       wrapProgram $f \
-      --prefix PATH ":" "${erlang}/bin:${coreutils}/bin"
+      --prefix PATH ":" "${erlang}/bin:${coreutils}/bin:${curl}/bin:${bash}/bin" \
+      --set CURL_CA_BUNDLE "${cacert}/etc/ca-bundle.crt"
     done
   '';
 
@@ -45,7 +50,7 @@ stdenv.mkDerivation {
     '';
 
     license = licenses.epl10;
-    platforms = platforms.linux;
+    platforms = platforms.unix;
     maintainers = [ maintainers.the-kenny ];
   };
 }

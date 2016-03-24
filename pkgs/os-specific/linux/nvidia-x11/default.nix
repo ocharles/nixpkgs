@@ -8,10 +8,13 @@
 
 with stdenv.lib;
 
+assert (!libsOnly) -> kernel != null;
+
 let
 
-  versionNumber = "331.20";
-
+  versionNumber = "343.36";
+  # Policy: use the highest stable version as the default (on our master).
+  inherit (stdenv.lib) makeLibraryPath;
 in
 
 stdenv.mkDerivation {
@@ -23,12 +26,12 @@ stdenv.mkDerivation {
     if stdenv.system == "i686-linux" then
       fetchurl {
         url = "http://us.download.nvidia.com/XFree86/Linux-x86/${versionNumber}/NVIDIA-Linux-x86-${versionNumber}.run";
-        sha256 = "0icpmfsppnsvk7vj0fshi3ry4s1wix435s2c8wwak47765fv1mks";
+        sha256 = "17l23dp725883xcyy1n178pcl6lj27psrgbxymc356x2pngwkhcc";
       }
     else if stdenv.system == "x86_64-linux" then
       fetchurl {
         url = "http://us.download.nvidia.com/XFree86/Linux-x86_64/${versionNumber}/NVIDIA-Linux-x86_64-${versionNumber}-no-compat32.run";
-        sha256 = "02503dis3ngraqv7174a4pay2x08hp697n9q74rpjjclf5k74ax1";
+        sha256 = "0djvh9wmazrfvpgyiqrz81kjk2war20xyjjr2kncxyplzk28mw97";
       }
     else throw "nvidia-x11 does not support platform ${stdenv.system}";
 
@@ -38,22 +41,21 @@ stdenv.mkDerivation {
 
   dontStrip = true;
 
-  glPath = stdenv.lib.makeLibraryPath [xlibs.libXext xlibs.libX11 xlibs.libXrandr];
+  glPath      = makeLibraryPath [xlibs.libXext xlibs.libX11 xlibs.libXrandr];
+  cudaPath    = makeLibraryPath [zlib stdenv.cc.gcc];
+  openclPath  = makeLibraryPath [zlib];
+  allLibPath  = makeLibraryPath [xlibs.libXext xlibs.libX11 xlibs.libXrandr zlib stdenv.cc.gcc];
 
-  cudaPath = stdenv.lib.makeLibraryPath [zlib stdenv.gcc.gcc];
-
-  openclPath = stdenv.lib.makeLibraryPath [zlib];
-
-  programPath = optionalString (!libsOnly) (stdenv.lib.makeLibraryPath
+  programPath = optionalString (!libsOnly) (makeLibraryPath
     [ gtk atk pango glib gdk_pixbuf xlibs.libXv ] );
 
   buildInputs = [ perl ];
 
-  meta = {
+  meta = with stdenv.lib.meta; {
     homepage = http://www.nvidia.com/object/unix.html;
     description = "X.org driver and kernel module for NVIDIA graphics cards";
-    license = stdenv.lib.licenses.unfreeRedistributable;
-    platforms = stdenv.lib.platforms.linux;
-    hydraPlatforms = [];
+    license = licenses.unfreeRedistributable;
+    platforms = platforms.linux;
+    maintainers = [ maintainers.vcunat ];
   };
 }

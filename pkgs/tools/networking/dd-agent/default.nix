@@ -1,37 +1,44 @@
-{ stdenv, fetchurl, python, sysstat, unzip }:
+{ stdenv, fetchFromGitHub, python, pythonPackages, sysstat, unzip, tornado
+, makeWrapper }:
 
 stdenv.mkDerivation rec {
-    version = "4.0.1";
-    name = "dd-agent-${version}";
+  version = "5.1.1";
+  name = "dd-agent-${version}";
 
-    src = fetchurl {
-      url = "https://github.com/DataDog/dd-agent/archive/${version}.zip";
-      sha256 = "0gybdbjkj7qwnzic03xkypagb30zhm22gp3nkwrdhi8fdmwz3nm1";
-    };
+  src = fetchFromGitHub {
+    owner = "DataDog";
+    repo = "dd-agent";
+    rev = version;
+    sha256 = "17gj2bsnidwwmwfc0m2ll90sh28izpxz2wkczpnvzfiq0askdxmp";
+  };
 
-    buildInputs = [ python unzip ];
-    propagatedBuildInputs = [ python ];
+  buildInputs = [ python unzip makeWrapper pythonPackages.psycopg2 pythonPackages.ntplib pythonPackages.simplejson pythonPackages.pyyaml pythonPackages.requests ];
+  propagatedBuildInputs = [ python tornado ];
 
-    postUnpack = "export sourceRoot=$sourceRoot/packaging";
+  buildCommand = ''
+    mkdir -p $out/bin
+    cp -R $src $out/agent
+    chmod u+w -R $out
+    PYTHONPATH=$out/agent:$PYTHONPATH
+    ln -s $out/agent/agent.py $out/bin/dd-agent
+    ln -s $out/agent/dogstatsd.py $out/bin/dogstatsd
+    ln -s $out/agent/ddagent.py $out/bin/dd-forwarder
 
-    makeFlags = [ "BUILD=$(out)" ];
+    wrapProgram $out/bin/dd-forwarder \
+      --prefix PYTHONPATH : $PYTHONPATH
+    wrapProgram $out/bin/dd-agent \
+      --prefix PYTHONPATH : $PYTHONPATH
+    wrapProgram $out/bin/dogstatsd \
+      --prefix PYTHONPATH : $PYTHONPATH
 
-    installTargets = [ "install_base" "install_full" ];
+    patchShebangs $out
+  '';
 
-    postInstall = ''
-      mv $out/usr/* $out
-      rmdir $out/usr
-    '';
-
-    meta = {
-      description = "Event collector for the DataDog analysis service";
-
-      homepage = http://www.datadoghq.com;
-
-      maintainers = [ stdenv.lib.maintainers.shlevy stdenv.lib.maintainers.iElectric ];
-
-      license = stdenv.lib.licenses.bsd3;
-
-      platforms = stdenv.lib.platforms.all;
-    };
+  meta = {
+    description = "Event collector for the DataDog analysis service";
+    homepage    = http://www.datadoghq.com;
+    license     = stdenv.lib.licenses.bsd3;
+    platforms   = stdenv.lib.platforms.all;
+    maintainers = with stdenv.lib.maintainers; [ thoughtpolice iElectric ];
+  };
 }

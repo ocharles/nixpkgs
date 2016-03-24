@@ -1,22 +1,33 @@
-{ stdenv, fetchurl, libevent, openssl, zlib }:
+{ stdenv, fetchurl, libevent, openssl, zlib, torsocks }:
 
 stdenv.mkDerivation rec {
-  name = "tor-0.2.3.25";
+  name = "tor-0.2.5.10";
 
   src = fetchurl {
-    url = "http://www.torproject.org/dist/${name}.tar.gz";
-    sha256 = "bb2d6f1136f33e11d37e6e34184143bf191e59501613daf33ae3d6f78f3176a0";
+    url = "https://archive.torproject.org/tor-package-archive/${name}.tar.gz";
+    sha256 = "0fx8qnwh2f8ykfx0np4hyznjfi4xfy96z59pk96y3zyjvjjh5pdk";
   };
 
-  buildInputs = [ libevent openssl zlib ];
+  # Note: torsocks is specified as a dependency, as the distributed
+  # 'torify' wrapper attempts to use it; although there is no
+  # ./configure time check for any of this.
+  buildInputs = [ libevent openssl zlib torsocks ];
 
   CFLAGS = "-lgcc_s";
+
+  # Patch 'torify' to point directly to torsocks.
+  patchPhase = ''
+    substituteInPlace contrib/client-tools/torify \
+      --replace 'pathfind torsocks' true          \
+      --replace 'exec torsocks' 'exec ${torsocks}/bin/torsocks'
+  '';
 
   doCheck = true;
 
   meta = {
     homepage = http://www.torproject.org/;
-    description = "Tor, an anonymous network router to improve privacy on the Internet";
+    repositories.git = https://git.torproject.org/git/tor;
+    description = "Anonymous network router to improve privacy on the Internet";
 
     longDescription=''
       Tor protects you by bouncing your communications around a distributed
@@ -30,10 +41,8 @@ stdenv.mkDerivation rec {
 
     license="mBSD";
 
-    maintainers =
-      [ # Russell O’Connor <roconnor@theorem.ca> ?
-        stdenv.lib.maintainers.ludo
-      ];
+    maintainers = with stdenv.lib.maintainers;
+      [ phreedom doublec thoughtpolice ];
     platforms = stdenv.lib.platforms.gnu;  # arbitrary choice
   };
 }

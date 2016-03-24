@@ -38,17 +38,17 @@ stdenv.mkDerivation rec {
   phases = "unpackPhase installPhase";
 
   installPhase = ''
-    ensureDir $out/{opt/andyetitmoves,bin}
+    mkdir -p $out/{opt/andyetitmoves,bin}
     cp -r * $out/opt/andyetitmoves/
 
-    fullPath=${stdenv.gcc.gcc}/lib64
+    fullPath=${stdenv.cc.gcc}/lib64
     for i in $nativeBuildInputs; do
       fullPath=$fullPath''${fullPath:+:}$i/lib
     done
 
     binName=${if commercialVersion then "AndYetItMoves" else "AndYetItMovesDemo"}
 
-    patchelf --set-interpreter $(cat $NIX_GCC/nix-support/dynamic-linker) --set-rpath $fullPath $out/opt/andyetitmoves/lib/$binName
+    patchelf --set-interpreter $(cat $NIX_CC/nix-support/dynamic-linker) --set-rpath $fullPath $out/opt/andyetitmoves/lib/$binName
     cat > $out/bin/$binName << EOF
     #!/bin/sh
     cd $out/opt/andyetitmoves
@@ -68,7 +68,7 @@ stdenv.mkDerivation rec {
 
     homepage = http://www.andyetitmoves.net/;
 
-    license = "unfree";
+    license = stdenv.lib.licenses.unfree;
 
     maintainers = with stdenv.lib.maintainers; [bluescreen303];
   };

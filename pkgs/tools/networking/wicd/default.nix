@@ -2,9 +2,6 @@
  wpa_supplicant, dhcp, dhcpcd, wirelesstools, nettools, openresolv, iproute, iputils,
  pythonPackages, locale ? "C" }:
 
-# Wicd has a ncurses interface that we do not build because it depends
-# on urwid which has not been packaged at this time (2009-12-27).
-
 stdenv.mkDerivation rec {
   name = "wicd-${version}";
   version = "1.7.2.4";
@@ -14,7 +11,7 @@ stdenv.mkDerivation rec {
     sha256 = "15ywgh60xzmp5z8l1kzics7yi95isrjg1paz42dvp7dlpdfzpzfw";
   };
 
-  buildInputs = [ python pythonPackages.Babel ];
+  buildInputs = [ python pythonPackages.Babel pythonPackages.urwid ];
 
   patches = [
     ./no-var-install.patch
@@ -23,6 +20,7 @@ stdenv.mkDerivation rec {
     ./dhclient.patch 
     ./fix-app-icon.patch
     ./fix-gtk-issues.patch
+    ./urwid-api-update.patch
     ];
 
   # Should I be using pygtk's propogated build inputs?
@@ -41,6 +39,8 @@ stdenv.mkDerivation rec {
     sed -i "3iexport PYTHONPATH=$(toPythonPath $out):$(toPythonPath ${pyGtkGlade})/gtk-2.0:$(toPythonPath ${pygobject}):$(toPythonPath ${pygobject})/gtk-2.0:$(toPythonPath ${pycairo}):$(toPythonPath ${pythonDBus})\$\{PYTHONPATH:+:\}\$PYTHONPATH" in/scripts=wicd-gtk.in
     sed -i "2iexport PATH=${python}/bin\$\{PATH:+:\}\$PATH" in/scripts=wicd-cli.in
     sed -i "3iexport PYTHONPATH=$(toPythonPath $out):$(toPythonPath ${pyGtkGlade})/gtk-2.0:$(toPythonPath ${pygobject}):$(toPythonPath ${pycairo}):$(toPythonPath ${pythonDBus})\$\{PYTHONPATH:+:\}\$PYTHONPATH" in/scripts=wicd-cli.in
+    sed -i "2iexport PATH=${python}/bin\$\{PATH:+:\}\$PATH" in/scripts=wicd-curses.in
+    sed -i "3iexport PYTHONPATH=$(toPythonPath $out):$(toPythonPath ${pyGtkGlade})/gtk-2.0:$(toPythonPath ${pygobject}):$(toPythonPath ${pycairo}):$(toPythonPath ${pythonDBus}):$(toPythonPath ${pythonPackages.urwid}):$(toPythonPath ${pythonPackages.curses})\$\{PYTHONPATH:+:\}\$PYTHONPATH" in/scripts=wicd-curses.in
     rm po/ast.po
   '';
 
@@ -83,7 +83,6 @@ stdenv.mkDerivation rec {
     --no-install-kde \
     --no-install-acpi \
     --no-install-pmutils \
-    --no-install-ncurses \
   '';
 
   installPhase = ''

@@ -1,6 +1,6 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 let
-  inherit (pkgs.lib) mkOption types mkIf optionalString;
+  inherit (lib) mkOption types mkIf optionalString;
 
   cfg = config.services.kmscon;
 
@@ -44,6 +44,7 @@ in {
       After=systemd-user-sessions.service
       After=plymouth-quit-wait.service
       After=systemd-logind.service
+      After=systemd-vconsole-setup.service
       Requires=systemd-logind.service
       Before=getty.target
       Conflicts=getty@%i.service
@@ -62,13 +63,19 @@ in {
       X-RestartIfChanged=false
     '';
 
-    systemd.units."autovt@.service".linkTarget = "${config.systemd.units."kmsconvt@.service".unit}/kmsconvt@.service";
+    systemd.units."autovt@.service".unit = pkgs.runCommand "unit" { }
+        ''
+          mkdir -p $out
+          ln -s ${config.systemd.units."kmsconvt@.service".unit}/kmsconvt@.service $out/autovt@.service
+        '';
+
+    systemd.services.systemd-vconsole-setup.restartIfChanged = false;
 
     services.kmscon.extraConfig = mkIf cfg.hwRender ''
       drm
       hwaccel
     '';
 
-    services.mesa.enable = mkIf cfg.hwRender true;
+    hardware.opengl.enable = mkIf cfg.hwRender true;
   };
 }

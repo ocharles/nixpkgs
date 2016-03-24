@@ -4,30 +4,30 @@
 }:
 
 assert stdenv.isLinux;
-assert stdenv.gcc.gcc != null;
+assert stdenv.cc.gcc != null;
 
 let
-    version = "1.7.10";
+    version = "1.7.34";
     name = "wine-${version}";
 
     src = fetchurl {
       url = "mirror://sourceforge/wine/${name}.tar.bz2";
-      sha256 = "1nybsp4pga0jhx6rm6ngpa2ixsbj75p8w22r9d70x4zgjx5hw9s4";
+      sha256 = "02rk686l0kpbnvplmwl0c7xqy2ymnxcxh38dknm35chg8ljknnjd";
     };
 
     gecko = fetchurl {
-      url = "mirror://sourceforge/wine/wine_gecko-2.21-x86.msi";
-      sha256 = "1n0zccnvchkg0m896sjx5psk4bxw9if32xyxib1rbfdasykay7zh";
+      url = "mirror://sourceforge/wine/wine_gecko-2.24-x86.msi";
+      sha256 = "0b10f55q3sldlcywscdlw3kd7vl9izlazw7jx30y4rpahypaqf3f";
     };
 
     gecko64 = fetchurl {
-      url = "mirror://sourceforge/wine/wine_gecko-2.21-x86_64.msi";
-      sha256 = "0grc86dkq90i59zw43hakh62ra1ajnk11m64667xjrlzi7f0ndxw";
+      url = "mirror://sourceforge/wine/wine_gecko-2.24-x86_64.msi";
+      sha256 = "1j4wdlhzvjrabzr9igcnx0ivm5mcb8kp7bwkpfpfsanbifk7sma7";
     };
 
     mono = fetchurl {
-      url = "mirror://sourceforge/wine/wine-mono-0.0.8.msi";
-      sha256 = "00jl24qp7vh3hlqv7wsw1s529lr5p0ybif6s73jy85chqaxj7z1x";
+      url = "mirror://sourceforge/wine/wine-mono-4.5.2.msi";
+      sha256 = "1bgasysf3qacxgh5rlk7qlw47ar5zgd1k9gb22pihi5s87dlw4nr";
     };
 
 in stdenv.mkDerivation rec {
@@ -46,10 +46,10 @@ in stdenv.mkDerivation rec {
   # them to the RPATH so that the user doesn't have to set them in
   # LD_LIBRARY_PATH.
   NIX_LDFLAGS = map (path: "-rpath ${path}/lib ") [
-    freetype fontconfig stdenv.gcc.gcc mesa mesa_noglu.osmesa libdrm
+    freetype fontconfig stdenv.cc.gcc mesa mesa_noglu.osmesa libdrm
     xlibs.libXinerama xlibs.libXrender xlibs.libXrandr
     xlibs.libXcursor xlibs.libXcomposite libpng libjpeg
-    openssl gnutls cups
+    openssl gnutls cups ncurses
   ];
 
   # Don't shrink the ELF RPATHs in order to keep the extra RPATH
@@ -62,7 +62,7 @@ in stdenv.mkDerivation rec {
     install -D ${gecko} $out/share/wine/gecko/${gecko64.name}
   '' + ''
     install -D ${mono} $out/share/wine/mono/${mono.name}
-    wrapProgram $out/bin/wine --prefix LD_LIBRARY_PATH : ${stdenv.gcc.gcc}/lib
+    wrapProgram $out/bin/wine --prefix LD_LIBRARY_PATH : ${stdenv.cc.gcc}/lib
   '';
 
   enableParallelBuilding = true;

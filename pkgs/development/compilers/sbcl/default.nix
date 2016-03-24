@@ -1,36 +1,21 @@
-a :  
-let 
-  fetchurl = a.fetchurl;
-  s= # Generated upstream information
-  rec {
-    baseName="sbcl";
-    version="1.1.14";
-    name="${baseName}-${version}";
-    hash="0vqsq6q4xvz7vn1akvjwxp406mysak4h955pp8x32dfqc6ina7k7";
-    url="mirror://sourceforge/project/sbcl/sbcl/1.1.14/sbcl-1.1.14-source.tar.bz2";
-    sha256="0vqsq6q4xvz7vn1akvjwxp406mysak4h955pp8x32dfqc6ina7k7";
+{ stdenv, fetchurl, sbclBootstrap, clisp, which}:
+
+stdenv.mkDerivation rec {
+  name    = "sbcl-${version}";
+  version = "1.2.7";
+
+  src = fetchurl {
+    url    = "mirror://sourceforge/project/sbcl/sbcl/${version}/${name}-source.tar.bz2";
+    sha256 = "10sjrh91pak4s6j4ks02xp88s25lh8zsii3x7rkn6p7vr7c9jw5j";
   };
-  buildInputs = with a; [
-    clisp makeWrapper
-  ];
-in
-rec {
-  src = a.fetchUrlFromSrcInfo s;
 
-  inherit buildInputs;
-  configureFlags = [];
+  buildInputs = [ which ]
+    ++ (stdenv.lib.optional stdenv.isDarwin sbclBootstrap)
+    ++ (stdenv.lib.optional stdenv.isLinux clisp)
+    ;
 
-  /* doConfigure should be removed if not needed */
-  phaseNames = ["setVars" "doFixNewer" "doFixTests" "setVersion" "doPatch" "doBuild" "doInstall" "doWrap"];
-
-  setVars = a.fullDepEntry (''
-    export INSTALL_ROOT=$out
-    mkdir test-home
-    export HOME=$PWD/test-home
-  '') ["minInit"];
-
-  setVersion = a.fullDepEntry (''
-    echo '"${s.version}.nixos"' > version.lisp-expr
+  patchPhase = ''
+    echo '"${version}.nixos"' > version.lisp-expr
     echo "
     (lambda (features)
       (flet ((enable (x)
@@ -38,14 +23,11 @@ rec {
              (disable (x)
                (setf features (remove x features))))
         (enable :sb-thread))) " > customize-target-features.lisp
-  '') ["minInit" "doUnpack"];
 
-  /* SBCL checks whether files are up-to-date in many places.. Unfortunately, same timestamp 
-     is not good enought
-  */
-  doFixNewer = a.fullDepEntry(''
     pwd
 
+    # SBCL checks whether files are up-to-date in many places..
+    # Unfortunately, same timestamp is not good enough
     sed -e 's@> x y@>= x y@' -i contrib/sb-aclrepl/repl.lisp
     sed -e '/(date)/i((= date 2208988801) 2208988800)' -i contrib/asdf/asdf.lisp
     sed -i src/cold/slam.lisp -e \
@@ -56,13 +38,11 @@ rec {
       '/date defaulted-fasl/a)'
     sed -i src/code/target-load.lisp -e \
       '/date defaulted-source/i(or (and (= 2208988801 (file-write-date defaulted-source-truename)) (= 2208988801 (file-write-date defaulted-fasl-truename)))'
-  '') ["minInit" "doUnpack"];
 
-  doWrap = a.fullDepEntry (''
-    wrapProgram "$out/bin/sbcl" --set "SBCL_HOME" "$out/lib/sbcl"
-  '') ["minInit" "addInputs"];
+    # Fix software version retrieval
+    sed -e "s@/bin/uname@$(which uname)@g" -i src/code/*-os.lisp
 
-  doFixTests = a.fullDepEntry (''
+    # Fix the tests
     sed -e '/deftest pwent/inil' -i contrib/sb-posix/posix-tests.lisp
     sed -e '/deftest grent/inil' -i contrib/sb-posix/posix-tests.lisp
     sed -e '/deftest .*ent.non-existing/,+5d' -i contrib/sb-posix/posix-tests.lisp
@@ -70,24 +50,36 @@ rec {
 
     sed -e '5,$d' -i contrib/sb-bsd-sockets/tests.lisp
     sed -e '5,$d' -i contrib/sb-simple-streams/*test*.lisp
-  '') ["minInit" "doUnpack"];
 
-  doBuild = a.fullDepEntry (''
-    sh make.sh clisp
-  '') ["minInit" "doUnpack" "addInputs"];
+    # Use whatever `cc` the stdenv provides
+    substituteInPlace src/runtime/Config.x86-64-darwin --replace gcc cc
+  '';
 
-  doInstall = a.fullDepEntry (''
-    sh install.sh
-  '') ["doBuild" "minInit" "addInputs"];
+  preBuild = ''
+    export INSTALL_ROOT=$out
+    mkdir -p test-home
+    export HOME=$PWD/test-home
+  '';
 
-  inherit(s) name;
-  inherit(s) version;
+  buildPhase = if stdenv.isLinux
+    then ''
+      sh make.sh clisp --prefix=$out
+    ''
+    else ''
+      sh make.sh --prefix=$out --xc-host='${sbclBootstrap}/bin/sbcl --core ${sbclBootstrap}/share/sbcl/sbcl.core --disable-debugger --no-userinit --no-sysinit'
+    '';
+
+  installPhase = ''
+    INSTALL_ROOT=$out sh install.sh
+  '';
+
   meta = {
     description = "Lisp compiler";
-    homepage = "http://www.sbcl.org";
-    license = "bsd";
-    maintainers = [a.lib.maintainers.raskin];
-    platforms = with a.lib.platforms; all;
-    inherit(s) version;
+    homepage = http://www.sbcl.org;
+    license = stdenv.lib.licenses.bsd3;
+    maintainers = [stdenv.lib.maintainers.raskin];
+    platforms = stdenv.lib.platforms.all;
+    inherit version;
+    updateWalker = true;
   };
 }

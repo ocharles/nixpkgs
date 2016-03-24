@@ -29,6 +29,12 @@ stdenv.mkDerivation {
 
     # Fix a `conflicting types for 'scandir'' error on Glibc 2.11.
     ./scandir.patch
+
+    # Fix a `conflicting types for 'readlink'' error since Glibc 2.19
+    ./readlink-types.patch
+
+    # Fix BuildRoot handling in RPM builds.
+    ./set-buildroot.patch
   ]
 
   ++ stdenv.lib.optional (stdenv.system == "x86_64-linux") 

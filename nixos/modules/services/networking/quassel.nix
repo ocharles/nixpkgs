@@ -1,6 +1,6 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 let
   quassel = pkgs.kde4.quasselDaemon;
@@ -74,21 +74,23 @@ in
         gid = config.ids.gids.quassel;
       }];
 
-    jobs.quassel =
+    systemd.services.quassel =
       { description = "Quassel IRC client daemon";
 
-        startOn = "ip-up";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "network.target" ];
 
         preStart = ''
-            mkdir -p ${cfg.dataDir}
-            chown ${user} ${cfg.dataDir}
+          mkdir -p ${cfg.dataDir}
+          chown ${user} ${cfg.dataDir}
         '';
 
-        exec = ''
-            ${pkgs.su}/bin/su -s ${pkgs.stdenv.shell} ${user} \
-                -c '${quassel}/bin/quasselcore --listen=${cfg.interface}\
-                    --port=${toString cfg.portNumber} --configdir=${cfg.dataDir}'
-        '';
+        serviceConfig =
+        {
+          ExecStart = "${quassel}/bin/quasselcore --listen=${cfg.interface} --port=${toString cfg.portNumber} --configdir=${cfg.dataDir}";
+          User = user;
+          PermissionsStartOnly = true;
+        };
       };
 
   };

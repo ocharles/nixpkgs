@@ -1,12 +1,13 @@
-{ stdenv, fetchgit, emacs }:
+{ stdenv, fetchurl, emacs }:
 
 stdenv.mkDerivation rec {
-  name = "idris-mode-20140106";
+  name = "${pname}-${version}";
+  pname = "idris-mode";
+  version = "0.9.15";
 
-  src = fetchgit {
-    url = https://github.com/idris-hackers/idris-mode.git;
-    rev = "47df65dd5b554c1d7cf70a07c3bd06d80867f870";
-    sha256 = "55df66d1bace134bea83f0547e01daf068fc96dc080cf88ea8945ddcb2d08ea4";
+  src = fetchurl {
+    url = "https://github.com/idris-hackers/${pname}/archive/${version}.tar.gz";
+    sha256 = "0ag7qqsv64rifk9ncdxv4gyylfbw6c8y2wq610l4pabqv2qrlh9r";
   };
 
   buildInputs = [ emacs ];
@@ -22,8 +23,8 @@ stdenv.mkDerivation rec {
 
   meta = {
     description = "Emacs major mode for Idris";
-    homepage = https://github.com/idris-hackers/idris-modehttps://github.com/idris-hackers/idris-mode;
-    license = "GPLv3";
+    homepage = https://github.com/idris-hackers/idris-mode;
+    license = stdenv.lib.licenses.gpl3;
 
     platforms = stdenv.lib.platforms.all;
   };

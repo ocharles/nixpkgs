@@ -1,13 +1,12 @@
-{ pkgs, ... }:
-
-{
+import ./make-test.nix ({ pkgs, ... }: {
+  name = "kde4";
 
   machine =
     { config, pkgs, ... }:
 
     { imports = [ ./common/user-account.nix ];
 
-      virtualisation.memorySize = 768;
+      virtualisation.memorySize = 1024;
 
       services.xserver.enable = true;
 
@@ -33,7 +32,7 @@
           pkgs.kde4.kdegraphics
           pkgs.kde4.kdeutils
           pkgs.kde4.kdegames
-          pkgs.kde4.kdeedu
+          #pkgs.kde4.kdeedu
           pkgs.kde4.kdeaccessibility
           pkgs.kde4.kdeadmin
           pkgs.kde4.kdenetwork
@@ -42,8 +41,7 @@
         ];
     };
 
-  testScript =
-    ''
+  testScript = '' 
       $machine->waitUntilSucceeds("pgrep plasma-desktop");
       $machine->waitForWindow(qr/plasma-desktop/);
 
@@ -61,7 +59,7 @@
 
       $machine->sleep(10);
 
-      $machine->screenshot("screen");
+      $machine->screenshot("screen"); 
     '';
 
-}
+})

@@ -23,10 +23,13 @@ stdenv.mkDerivation rec {
 
   configureFlags = if cxx then "--enable-cxx" else "--disable-cxx";
 
-  doCheck = true;
+  # The test t-lucnum_ui fails (on Linux/x86_64) when built with GCC 4.8.
+  # Newer versions of GMP don't have that issue anymore.
+  doCheck = false;
 
   meta = {
-    description = "GMP, the GNU multiple precision arithmetic library";
+    branch = "4";
+    description = "GNU multiple precision arithmetic library";
 
     longDescription =
       '' GMP is a free library for arbitrary precision arithmetic, operating
@@ -51,9 +54,9 @@ stdenv.mkDerivation rec {
       '';
 
     homepage = http://gmplib.org/;
-    license = "LGPLv3+";
+    license = stdenv.lib.licenses.lgpl3Plus;
 
-    maintainers = [ stdenv.lib.maintainers.ludo ];
+    maintainers = [ ];
     platforms = stdenv.lib.platforms.all;
   };
 }

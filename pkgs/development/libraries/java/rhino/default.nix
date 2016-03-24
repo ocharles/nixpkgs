@@ -42,7 +42,7 @@ stdenv.mkDerivation {
     '';
 
   meta = {
-    description = "Mozilla Rhino: JavaScript for Java";
+    description = "An implementation of JavaScript written in Java";
 
     longDescription =
       '' Rhino is an open-source implementation of JavaScript written
@@ -52,6 +52,6 @@ stdenv.mkDerivation {
 
     homepage = http://www.mozilla.org/rhino/;
 
-    licenses = [ "MPLv1.1" /* or */ "GPLv2+" ];
+    license = [ "MPLv1.1" /* or */ "GPLv2+" ];
   };
 }

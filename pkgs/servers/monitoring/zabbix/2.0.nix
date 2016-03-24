@@ -5,20 +5,20 @@ assert enableJabber -> minmay != null;
 
 let
 
-  version = "2.0.10";
+  version = "2.0.11";
   branch = "2.0";
 
   src = fetchurl {
     url = "mirror://sourceforge/zabbix/zabbix-${version}.tar.gz";
-    sha256 = "0p86m634j08w0gbr2rwqr3h5p6md7k0c688w5yxc1ii3l9fmnhbi";
+    sha256 = "1vqxlqwhnz02wrca08vrqbq8k19qp84hbdplmqk7d9699njim46i";
   };
 
   preConfigure =
     ''
       substituteInPlace ./configure \
         --replace " -static" "" \
-        ${stdenv.lib.optionalString (stdenv.gcc.libc != null) ''
-          --replace /usr/include/iconv.h ${stdenv.gcc.libc}/include/iconv.h
+        ${stdenv.lib.optionalString (stdenv.cc.libc != null) ''
+          --replace /usr/include/iconv.h ${stdenv.cc.libc}/include/iconv.h
         ''}
     '';
 

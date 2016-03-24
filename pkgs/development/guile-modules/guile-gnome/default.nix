@@ -33,8 +33,8 @@ stdenv.mkDerivation rec {
 
     homepage = http://www.gnu.org/software/guile-gnome/;
 
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
 
-    maintainers = [ stdenv.lib.maintainers.ludo ];
+    maintainers = [ ];
   };
 }

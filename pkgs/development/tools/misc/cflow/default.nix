@@ -11,7 +11,7 @@ stdenv.mkDerivation rec {
   patchPhase = ''
     substituteInPlace "src/cflow.h"					\
       --replace "/usr/bin/cpp"						\
-                "$(cat ${stdenv.gcc}/nix-support/orig-gcc)/bin/cpp"
+                "$(cat ${stdenv.cc}/nix-support/orig-gcc)/bin/cpp"
   '';
 
   buildInputs = [ gettext ] ++
@@ -24,7 +24,7 @@ stdenv.mkDerivation rec {
   doCheck = true;
 
   meta = {
-    description = "GNU cflow, a tool to analyze the control flow of C programs";
+    description = "Tool to analyze the control flow of C programs";
 
     longDescription = ''
       GNU cflow analyzes a collection of C source files and prints a
@@ -39,11 +39,11 @@ stdenv.mkDerivation rec {
       produced flowcharts in Emacs.
     '';
 
-    license = "GPLv3+";
+    license = stdenv.lib.licenses.gpl3Plus;
 
     homepage = http://www.gnu.org/software/cflow/;
 
-    maintainers = [ stdenv.lib.maintainers.ludo ];
+    maintainers = [ ];
 
     /* On Darwin, build fails with:
 

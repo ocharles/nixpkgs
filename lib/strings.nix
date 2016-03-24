@@ -2,7 +2,7 @@
 
 let lib = import ./default.nix;
 
-inherit (builtins) add sub lessThan length;
+inherit (builtins) length;
 
 in
 
@@ -34,6 +34,9 @@ rec {
   concatStringsSep = separator: list:
     concatStrings (intersperse separator list);
 
+  concatMapStringsSep = sep: f: list: concatStringsSep sep (map f list);
+  concatImapStringsSep = sep: f: list: concatStringsSep sep (lib.imap f list);
+
 
   # Construct a Unix-style search path consisting of each `subDir"
   # directory of the given list of packages.  For example,
@@ -56,12 +59,15 @@ rec {
   optionalString = cond: string: if cond then string else "";
 
 
-  # Determine whether a filename ends in the given suffix.
-  hasSuffix = ext: fileName:
-    let lenFileName = stringLength fileName;
-        lenExt = stringLength ext;
-    in !(lessThan lenFileName lenExt) &&
-       substring (sub lenFileName lenExt) lenFileName fileName == ext;
+  # Determine whether a string has given prefix/suffix.
+  hasPrefix = pref: str:
+    eqStrings (substring 0 (stringLength pref) str) pref;
+  hasSuffix = suff: str:
+    let
+      lenStr = stringLength str;
+      lenSuff = stringLength suff;
+    in lenStr >= lenSuff &&
+       eqStrings (substring (lenStr - lenSuff) lenStr str) suff;
 
 
   # Convert a string to a list of characters (i.e. singleton strings).
@@ -73,7 +79,7 @@ rec {
   stringToCharacters = s: let l = stringLength s; in
     if l == 0
     then []
-    else map (p: substring p 1 s) (lib.range 0 (sub l 1));
+    else map (p: substring p 1 s) (lib.range 0 (l - 1));
 
 
   # Manipulate a string charcater by character and replace them by strings
@@ -116,31 +122,35 @@ rec {
   toLower = replaceChars upperChars lowerChars;
   toUpper = replaceChars lowerChars upperChars;
 
+  # Appends string context from another string
+  addContextFrom = a: b: substring 0 0 a + b;
 
   # Compares strings not requiring context equality
   # Obviously, a workaround but works on all Nix versions
-  eqStrings = a: b: (a+(substring 0 0 b)) == ((substring 0 0 a)+b);
+  eqStrings = a: b: addContextFrom b a == addContextFrom a b;
 
 
   # Cut a string with a separator and produces a list of strings which were
   # separated by this separator. e.g.,
   # `splitString "." "foo.bar.baz"' returns ["foo" "bar" "baz"].
-  splitString = sep: s:
+  splitString = _sep: _s:
     let
+      sep = addContextFrom _s _sep;
+      s = addContextFrom _sep _s;
       sepLen = stringLength sep;
       sLen = stringLength s;
-      lastSearch = sub sLen sepLen;
+      lastSearch = sLen - sepLen;
       startWithSep = startAt:
         substring startAt sepLen s == sep;
 
       recurse = index: startAt:
-        let cutUntil = i: [(substring startAt (sub i startAt) s)]; in
-        if lessThan index lastSearch then
+        let cutUntil = i: [(substring startAt (i - startAt) s)]; in
+        if index < lastSearch then
           if startWithSep index then
-            let restartAt = add index sepLen; in
+            let restartAt = index + sepLen; in
             cutUntil index ++ recurse restartAt restartAt
           else
-            recurse (add index 1) startAt
+            recurse (index + 1) startAt
         else
           cutUntil sLen;
     in
@@ -155,8 +165,18 @@ rec {
       preLen = stringLength pre;
       sLen = stringLength s;
     in
-      if pre == substring 0 preLen s then
-        substring preLen (sub sLen preLen) s
+      if hasPrefix pre s then
+        substring preLen (sLen - preLen) s
+      else
+        s;
+
+  removeSuffix = suf: s:
+    let
+      sufLen = stringLength suf;
+      sLen = stringLength s;
+    in
+      if sufLen <= sLen && eqStrings suf (substring (sLen - sufLen) sufLen s) then
+        substring 0 (sLen - sufLen) s
       else
         s;
 

@@ -7,10 +7,11 @@
   # Include some utilities that are useful for installing or repairing
   # the system.
   environment.systemPackages = [
-    pkgs.subversion # for nixos-checkout
     pkgs.w3m # needed for the manual anyway
     pkgs.testdisk # useful for repairing boot problems
     pkgs.mssys # for writing Microsoft boot sectors / MBRs
+    pkgs.efibootmgr
+    pkgs.efivar
     pkgs.parted
     pkgs.gptfdisk
     pkgs.ddrescue
@@ -34,10 +35,9 @@
     pkgs.dosfstools
     pkgs.xfsprogs
     pkgs.jfsutils
-    #pkgs.jfsrec # disabled because of Boost dependency
+    pkgs.f2fs-tools
 
     # Some compression/archiver tools.
-    pkgs.unrar
     pkgs.unzip
     pkgs.zip
     pkgs.dar # disk archiver
@@ -50,6 +50,6 @@
   ];
 
   # Include support for various filesystems.
-  boot.supportedFilesystems = [ "btrfs" "reiserfs" "vfat" ];
+  boot.supportedFilesystems = [ "btrfs" "reiserfs" "vfat" "f2fs" ];
 
 }

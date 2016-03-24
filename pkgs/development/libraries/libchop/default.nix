@@ -1,4 +1,4 @@
-{ fetchurl, stdenv, zlib, bzip2, libgcrypt, gdbm, gperf, tdb, gnutls, db4
+{ fetchurl, stdenv, zlib, bzip2, libgcrypt, gdbm, gperf, tdb, gnutls, db
 , libuuid, lzo, pkgconfig, guile }:
 
 stdenv.mkDerivation rec {
@@ -16,7 +16,7 @@ stdenv.mkDerivation rec {
   buildInputs =
     [ zlib bzip2 lzo
       libgcrypt
-      gdbm db4 tdb
+      gdbm db tdb
       gnutls libuuid
       guile
     ];
@@ -24,7 +24,7 @@ stdenv.mkDerivation rec {
   doCheck = true;
 
   meta = {
-    description = "libchop, tools & library for data backup and distributed storage";
+    description = "Tools & library for data backup and distributed storage";
 
     longDescription =
       '' Libchop is a set of utilities and library for data backup and
@@ -42,9 +42,9 @@ stdenv.mkDerivation rec {
       '';
 
     homepage = http://nongnu.org/libchop/;
-    license = "GPLv3+";
+    license = stdenv.lib.licenses.gpl3Plus;
 
-    maintainers = with stdenv.lib.maintainers; [ ludo viric ];
+    maintainers = with stdenv.lib.maintainers; [ viric ];
     platforms = stdenv.lib.platforms.gnu;
   };
 }

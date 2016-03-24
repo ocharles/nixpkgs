@@ -10,18 +10,19 @@ assert withKerberos -> kerberos != null;
 let
 
   hpnSrc = fetchurl {
-    url = mirror://sourceforge/hpnssh/openssh-6.3p1-hpnssh14v2.diff.gz;
-    sha256 = "1jldqjwry9qpxxzb3mikfmmmv90mfb7xkmcfdbvwqac6nl3r7bi3";
+    url = mirror://sourceforge/hpnssh/openssh-6.6p1-hpnssh14v5.diff.gz;
+    sha256 = "682b4a6880d224ee0b7447241b684330b731018585f1ba519f46660c10d63950";
   };
+  optionalString = stdenv.lib.optionalString;
 
 in
 
 stdenv.mkDerivation rec {
-  name = "openssh-6.4p1";
+  name = "openssh-6.7p1";
 
   src = fetchurl {
-    url = "ftp://ftp.nl.uu.net/pub/OpenBSD/OpenSSH/portable/${name}.tar.gz";
-    sha256 = "1lkmi7v83qvpcc04qrrqk4k7mafnmwxkfk1ccsisw51va4bgcc2m";
+    url = "http://ftp.nluug.nl/pub/OpenBSD/OpenSSH/portable/${name}.tar.gz";
+    sha256 = "01smf9pvn2sk5qs80gkmc9acj07ckawi1b3xxyysp3c5mr73ky5j";
   };
 
   prePatch = stdenv.lib.optionalString hpnSupport
@@ -32,9 +33,8 @@ stdenv.mkDerivation rec {
 
   patches = [ ./locale_archive.patch ];
 
-  buildInputs = [ zlib openssl libedit pkgconfig pam ] ++
-    (if withKerberos then [ kerberos ] else [])
-  ;
+  buildInputs = [ zlib openssl libedit pkgconfig pam ]
+    ++ stdenv.lib.optional withKerberos [ kerberos ];
 
   # I set --disable-strip because later we strip anyway. And it fails to strip
   # properly when cross building.
@@ -44,8 +44,8 @@ stdenv.mkDerivation rec {
       --with-libedit=yes
       --disable-strip
       ${if pam != null then "--with-pam" else "--without-pam"}
-      ${if etcDir != null then "--sysconfdir=${etcDir}" else ""}
-      ${if withKerberos  then "--with-kerberos5=${kerberos}" else ""}
+      ${optionalString (etcDir != null) "--sysconfdir=${etcDir}"}
+      ${optionalString withKerberos "--with-kerberos5=${kerberos}"}
     '';
 
   preConfigure =
@@ -53,6 +53,8 @@ stdenv.mkDerivation rec {
       configureFlags="$configureFlags --with-privsep-path=$out/empty"
       mkdir -p $out/empty
     '';
+
+  enableParallelBuilding = true;
 
   postInstall =
     ''
@@ -67,11 +69,12 @@ stdenv.mkDerivation rec {
 
   installTargets = "install-nosysconf";
 
-  meta = {
-    homepage = http://www.openssh.org/;
+  meta = with stdenv.lib; {
+    homepage = "http://www.openssh.org/";
     description = "An implementation of the SSH protocol";
-    license = "bsd";
-    platforms = stdenv.lib.platforms.unix;
-    maintainers = stdenv.lib.maintainers.eelco;
+    license = stdenv.lib.licenses.bsd2;
+    platforms = platforms.unix;
+    maintainers = with maintainers; [ eelco ];
+    broken = hpnSupport; # probably after 6.7 update
   };
 }

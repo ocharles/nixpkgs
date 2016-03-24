@@ -1,6 +1,6 @@
-{ config, pkgs, options, ... }:
+{ config, lib, options, ... }:
 
-with pkgs.lib;
+with lib;
 
 let
 
@@ -12,18 +12,20 @@ let
     visible = true;
   };
 
+  # warn option was renamed
   obsolete = from: to: rename {
     inherit from to;
     name = "Obsolete name";
-    use = x: builtins.trace "Obsolete option `${showOption from}' is used instead of `${showOption to}'." x;
-    define = x: builtins.trace "Obsolete option `${showOption from}' is defined instead of `${showOption to}'." x;
+    use = x: builtins.trace "Obsolete option `${showOption from}' is used. It was renamed to `${showOption to}'." x;
+    define = x: builtins.trace "Obsolete option `${showOption from}' is used. It was renamed to `${showOption to}'." x;
   };
 
+  # abort if deprecated option is used
   deprecated = from: to: rename {
     inherit from to;
     name = "Deprecated name";
-    use = x: abort "Deprecated option `${showOption from}' is used instead of `${showOption to}'.";
-    define = x: abort "Deprecated option `${showOption from}' is defined instead of `${showOption to}'.";
+    use = x: abort "Deprecated option `${showOption from}' is used. It was renamed to `${showOption to}'.";
+    define = x: abort "Deprecated option `${showOption from}' is used. It was renamed to `${showOption to}'.";
   };
 
   showOption = concatStringsSep ".";
@@ -53,8 +55,8 @@ let
             apply = x: use (toOf config);
             inherit visible;
           });
-        }
-        { config = setTo (mkIf (fromOf options).isDefined (define (mkMerge (fromOf options).definitions)));
+
+          config = setTo (mkAliasAndWrapDefinitions define (fromOf options));
         }
       ];
 
@@ -72,6 +74,8 @@ in zipModules ([]
 ++ obsolete [ "environment" "x11Packages" ] [ "environment" "systemPackages" ]
 ++ obsolete [ "environment" "enableBashCompletion" ] [ "programs" "bash" "enableCompletion" ]
 ++ obsolete [ "environment" "nix" ] [ "nix" "package" ]
+++ obsolete [ "fonts" "enableFontConfig" ] [ "fonts" "fontconfig" "enable" ]
+++ obsolete [ "fonts" "extraFonts" ] [ "fonts" "fonts" ]
 
 ++ obsolete [ "security" "extraSetuidPrograms" ] [ "security" "setuidPrograms" ]
 ++ obsolete [ "networking" "enableWLAN" ] [ "networking" "wireless" "enable" ]
@@ -101,6 +105,14 @@ in zipModules ([]
 ++ obsolete [ "services" "sshd" "gatewayPorts" ] [ "services" "openssh" "gatewayPorts" ]
 ++ obsolete [ "services" "sshd" "permitRootLogin" ] [ "services" "openssh" "permitRootLogin" ]
 ++ obsolete [ "services" "xserver" "startSSHAgent" ] [ "services" "xserver" "startOpenSSHAgent" ]
+++ obsolete [ "services" "xserver" "startOpenSSHAgent" ] [ "programs" "ssh" "startAgent" ]
+++ obsolete [ "services" "xserver" "windowManager" "xbmc" ] [ "services" "xserver" "desktopManager" "xbmc" ]
+
+# VirtualBox
+++ obsolete [ "services" "virtualbox" "enable" ] [ "services" "virtualboxGuest" "enable" ]
+
+# proxy
+++ obsolete [ "nix" "proxy" ] [ "networking" "proxy" "default" ]
 
 # KDE
 ++ deprecated [ "kde" "extraPackages" ] [ "environment" "kdePackages" ]
@@ -113,13 +125,19 @@ in zipModules ([]
 # !!! this hardcodes bash, could we detect from config which shell is actually used?
 ++ obsolete [ "environment" "promptInit" ] [ "programs" "bash" "promptInit" ]
 
-++ obsolete [ "services" "xserver" "driSupport" ] [ "services" "mesa" "driSupport" ]
-++ obsolete [ "services" "xserver" "driSupport32Bit" ] [ "services" "mesa" "driSupport32Bit" ]
-++ obsolete [ "services" "xserver" "s3tcSupport" ] [ "services" "mesa" "s3tcSupport" ]
-++ obsolete [ "services" "xserver" "videoDrivers" ] [ "services" "mesa" "videoDrivers" ]
+++ obsolete [ "services" "xserver" "driSupport" ] [ "hardware" "opengl" "driSupport" ]
+++ obsolete [ "services" "xserver" "driSupport32Bit" ] [ "hardware" "opengl" "driSupport32Bit" ]
+++ obsolete [ "services" "xserver" "s3tcSupport" ] [ "hardware" "opengl" "s3tcSupport" ]
+++ obsolete [ "hardware" "opengl" "videoDrivers" ] [ "services" "xserver" "videoDrivers" ]
+
+++ obsolete [ "services" "mysql55" ] [ "services" "mysql" ]
 
 # Options that are obsolete and have no replacement.
 ++ obsolete' [ "boot" "loader" "grub" "bootDevice" ]
 ++ obsolete' [ "boot" "initrd" "luks" "enable" ]
+++ obsolete' [ "programs" "bash" "enable" ]
+++ obsolete' [ "services" "samba" "defaultShare" ]
+++ obsolete' [ "services" "syslog-ng" "serviceName" ]
+++ obsolete' [ "services" "syslog-ng" "listenToJournal" ]
 
 )

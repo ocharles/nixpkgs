@@ -1,11 +1,11 @@
-{stdenv, fetchurl}:
+{ stdenv, fetchurl }:
 
 stdenv.mkDerivation {
-  name = "findbugs-2.0.3";
+  name = "findbugs-3.0.0";
 
   src = fetchurl {
-    url = mirror://sourceforge/findbugs/findbugs-2.0.3.tar.gz;
-    sha256 = "17s93vszc5s2b7pwi0yk8d6w54gandxrr7vflhzmpbl6sxj2mfjr";
+    url = mirror://sourceforge/findbugs/findbugs-3.0.0.tar.gz;
+    sha256 = "0csz6drzdz867r2p2wa4cvick6bv9dpz2yym9wrvp3fnxabmgiri";
   };
 
   buildPhase = ''
@@ -13,9 +13,25 @@ stdenv.mkDerivation {
   '';
 
   installPhase = ''
-    mkdir -p $out
-    cp -prd bin lib plugin doc $out/
-    rm $out/bin/*.bat
+    d=$out/libexec/findbugs
+    mkdir -p $d $out/bin $out/nix-support
+
+    cp -prd bin lib plugin doc $d/
+    rm $d/bin/*.bat
+    for i in $d/bin/*; do
+      if [ -f $i ]; then ln -s $i $out/bin/; fi
+    done
+
+    # Get rid of unnecessary JARs.
+    rm $d/lib/ant.jar
+
+    # Make some JARs findable.
+    mkdir -p $out/share/java
+    ln -s $d/lib/{findbugs.jar,findbugs-ant.jar} $out/share/java/
+
+    cat <<EOF > $out/nix-support/setup-hook
+    export FINDBUGS_HOME=$d
+    EOF
   '';
 
   meta = {

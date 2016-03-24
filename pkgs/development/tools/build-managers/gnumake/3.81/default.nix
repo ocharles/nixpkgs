@@ -41,7 +41,7 @@ stdenv.mkDerivation {
 
     homepage = http://www.gnu.org/software/make/;
 
-    license = "GPLv2+";
-    maintainers = [ stdenv.lib.maintainers.ludo ];
+    license = stdenv.lib.licenses.gpl2Plus;
+    maintainers = [ ];
   };
 }

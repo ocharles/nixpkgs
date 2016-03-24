@@ -1,11 +1,11 @@
-{ stdenv, fetchurl, which, protobuf, v8, ncurses, gperftools, boost, m4 }:
+{ stdenv, fetchurl, which, protobuf, gperftools, boost, zlib, curl, python, m4 }:
 
 stdenv.mkDerivation rec {
-  name = "rethinkdb-1.11.2";
+  name = "rethinkdb-1.15.2";
 
   src = fetchurl {
     url = "http://download.rethinkdb.com/dist/${name}.tgz";
-    sha256 = "04wz07y891vygc5ksrvkk1ch05xj16nahv20bnxwcllkbl4gf9lj";
+    sha256 = "1fpx9apqm62i332q2isanpdql8gwwab4qxwzrspqwgcka9zd6gy3";
   };
 
   preConfigure = ''
@@ -15,10 +15,9 @@ stdenv.mkDerivation rec {
 
   configureFlags = "--lib-path ${gperftools}/lib";
 
-  buildInputs = [ protobuf v8 ncurses boost ];
+  buildInputs = [ protobuf boost zlib curl ];
 
-  nativeBuildInputs = [ which m4 ];
-
+  nativeBuildInputs = [ which m4 python ];
 
   meta = {
     description = "An open-source distributed database built with love";
@@ -28,7 +27,7 @@ stdenv.mkDerivation rec {
       and group by, and is easy to setup and learn.
     '';
     homepage = http://www.rethinkdb.com;
-    license = "AGPLv3";
+    license = stdenv.lib.licenses.agpl3;
 
     maintainers = [ stdenv.lib.maintainers.bluescreen303 ];
     platforms = stdenv.lib.platforms.all;

@@ -1,33 +1,37 @@
 { stdenv, fetchurl, composableDerivation, unzip, libjpeg, libtiff, zlib
-, postgresql, mysql, libgeotiff }:
+, postgresql, mysql, libgeotiff, python, pythonPackages, proj}:
 
-composableDerivation.composableDerivation {} (fixed: {
-  name = "gdal-1.7.1";
+composableDerivation.composableDerivation {} (fixed: rec {
+  version = "1.11.1";
+  name = "gdal-${version}";
 
   src = fetchurl {
-    url = ftp://ftp.remotesensing.org/gdal/gdal171.zip;
-    md5 = "f5592cff69b239166c9b64ff81943b1a";
+    url = "http://download.osgeo.org/gdal/${version}/${name}.tar.gz";
+    sha256 = "0h1kib2pzv4nbppdnxv6vhngvk9ic531y8rzcwb8bg6am125jszl";
   };
 
-  buildInputs = [ unzip libjpeg libtiff ];
+  buildInputs = [ unzip libjpeg libtiff python pythonPackages.numpy proj ];
 
-  # don't use optimization for gcc >= 4.3. That's said to be causeing segfaults
-  preConfigure = "export CFLAGS=-O0; export CXXFLAGS=-O0";
+  # Don't use optimization for gcc >= 4.3. That's said to be causing segfaults.
+  # Unset CC and CXX as they confuse libtool.
+  preConfigure = "export CFLAGS=-O0 CXXFLAGS=-O0; unset CC CXX";
 
   configureFlags = [
     "--with-jpeg=${libjpeg}"
-    "--with-libtiff=${libtiff}"  # optional (without largetiff support
-    "--with-libz=${zlib}"        # optional
+    "--with-libtiff=${libtiff}" # optional (without largetiff support)
+    "--with-libz=${zlib}"       # optional
 
     "--with-pg=${postgresql}/bin/pg_config"
     "--with-mysql=${mysql}/bin/mysql_config"
     "--with-geotiff=${libgeotiff}"
+    "--with-python"               # optional
+    "--with-static-proj4=${proj}" # optional
   ];
 
   meta = {
     description = "Translator library for raster geospatial data formats";
     homepage = http://www.gdal.org/;
-    license = "X/MIT";
+    license = stdenv.lib.licenses.mit;
     maintainers = [ stdenv.lib.maintainers.marcweber ];
     platforms = stdenv.lib.platforms.linux;
   };

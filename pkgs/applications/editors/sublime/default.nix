@@ -24,16 +24,17 @@ stdenv.mkDerivation rec {
     mkdir -p $out/bin
     mv Sublime* $out/sublime
     ln -s $out/sublime/sublime_text $out/bin/sublime
+    ln -s $out/sublime/sublime_text $out/bin/sublime2
 
     echo ${libPath}
     patchelf \
-      --interpreter "$(cat $NIX_GCC/nix-support/dynamic-linker)" \
-      --set-rpath ${libPath}:${stdenv.gcc.gcc}/lib${stdenv.lib.optionalString stdenv.is64bit "64"} \
+      --interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
+      --set-rpath ${libPath}:${stdenv.cc.gcc}/lib${stdenv.lib.optionalString stdenv.is64bit "64"} \
       $out/sublime/sublime_text
   '';
 
   meta = {
     description = "Sophisticated text editor for code, markup and prose";
-    license = "unfree";
+    license = stdenv.lib.licenses.unfree;
   };
 }

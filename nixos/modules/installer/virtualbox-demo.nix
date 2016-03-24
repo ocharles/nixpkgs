@@ -1,6 +1,6 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 {
   imports =
@@ -9,6 +9,9 @@ with pkgs.lib;
       ../profiles/demo.nix
       ../profiles/clone-config.nix
     ];
+
+  # FIXME: UUID detection is currently broken
+  boot.loader.grub.fsIdentifier = "provided";
 
   # Allow mounting of shared folders.
   users.extraUsers.demo.extraGroups = [ "vboxsf" ];

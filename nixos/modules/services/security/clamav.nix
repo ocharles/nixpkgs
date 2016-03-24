@@ -1,5 +1,5 @@
-{ config, pkgs, ... }:
-with pkgs.lib;
+{ config, lib, pkgs, ... }:
+with lib;
 let
   clamavUser = "clamav";
   stateDir = "/var/lib/clamav";
@@ -71,7 +71,7 @@ in
             mkdir -m 0755 -p ${stateDir}
             chown ${clamavUser}:${clamavGroup} ${stateDir}
           '';
-          exec = "${pkgs.clamav}/bin/freshclam --config-file=${pkgs.writeText "freshclam.conf" cfg.updater.config}";
+          exec = "${pkgs.clamav}/bin/freshclam --daemon --config-file=${pkgs.writeText "freshclam.conf" cfg.updater.config}";
       }; 
     };
 

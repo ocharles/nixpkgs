@@ -4,8 +4,8 @@
 assert stdenv.system == "x86_64-linux" || stdenv.system == "1686-linux";
 
 stdenv.mkDerivation rec {
-  debversion = "beta_1.0.84.1107-r0";
-  version = "1.0.84.1107-beta-r0"; # friendly to nix-env version sorting algo
+  debversion = "beta_1.0.55.7425-r0";
+  version = "beta_1.0.55.7425-r0"; # friendly to nix-env version sorting algo
   product = "google-musicmanager";
   name    = "${product}-${version}";
 
@@ -16,12 +16,12 @@ stdenv.mkDerivation rec {
 
   src = if stdenv.system == "x86_64-linux"
     then fetchurl {
-      url    = "http://dl.google.com/linux/musicmanager/deb/pool/main/g/${product}-beta/${product}-${debversion}_amd64.deb";
-      sha256 = "0irlrspw508b1s9i5d1mddpp2x9w1ny3svf27gxf8pmwbiyd1cyi";
+      url    = "http://dl.google.com/linux/musicmanager/deb/pool/main/g/google-musicmanager-beta/google-musicmanager-${version}_amd64.deb";
+      sha256 = "10nr7qlrn5af4g0l6n4xzximmhc216vhzgpy7cpxs662zpli3v1a";
     }
     else fetchurl {
-       url    = "http://dl.google.com/linux/musicmanager/deb/pool/main/g/${product}-beta/${product}-${debversion}_i386.deb";
-       sha256 = "13pfsjvaygap6axrlbfhyk1h8377xmwi47x4af6j57qq6z7329rg";
+        url    = "http://dl.google.com/linux/musicmanager/deb/pool/main/g/google-musicmanager-beta/google-musicmanager-${version}_i386.deb";
+        sha256 = "4cc8822ab90af97195c2edfa74cc8b4a736e763cc3382f741aa1de0f72ac211e";
     };
 
   unpackPhase = ''
@@ -33,8 +33,8 @@ stdenv.mkDerivation rec {
 
   buildPhase = ''
     patchelf \
-      --set-interpreter "$(cat $NIX_GCC/nix-support/dynamic-linker)" \
-      --set-rpath "$out/opt/google/musicmanager:${readline}/lib:${ncurses}/lib:${stdenv.gcc.libc}/lib:${qt48}/lib:${stdenv.gcc.gcc}/lib:${libidn}/lib:${expat}/lib:${flac}/lib:${libvorbis}/lib" opt/google/musicmanager/MusicManager
+      --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
+      --set-rpath "$out/opt/google/musicmanager:${readline}/lib:${ncurses}/lib:${stdenv.cc.libc}/lib:${qt48}/lib:${stdenv.cc.gcc}/lib:${libidn}/lib:${expat}/lib:${flac}/lib:${libvorbis}/lib" opt/google/musicmanager/MusicManager
   '';
 
   dontPatchELF = true;

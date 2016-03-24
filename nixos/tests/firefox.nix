@@ -1,6 +1,5 @@
-{ pkgs, ... }:
-
-{
+import ./make-test.nix ({ pkgs, ... }: {
+  name = "firefox";
 
   machine =
     { config, pkgs, ... }:
@@ -16,7 +15,6 @@
       $machine->waitForWindow(qr/Valgrind/);
       $machine->sleep(40); # wait until Firefox has finished loading the page
       $machine->screenshot("screen");
-
     '';
 
-}
+})

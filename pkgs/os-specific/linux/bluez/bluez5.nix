@@ -1,22 +1,22 @@
-{ stdenv, fetchurl, pkgconfig, dbus, glib, libusb, alsaLib, python,
+{ stdenv, fetchurl, pkgconfig, dbus, glib, alsaLib, python,
   pythonPackages, pythonDBus, readline, libsndfile, udev, libical,
-  systemd }:
+  systemd, enableWiimote ? false }:
 
 assert stdenv.isLinux;
 
 stdenv.mkDerivation rec {
-  name = "bluez-5.12";
+  name = "bluez-5.25";
    
   src = fetchurl {
     url = "mirror://kernel/linux/bluetooth/${name}.tar.xz";
-    sha256 = "0zk183gjsxissq9gma962cyvyqxydai8n6jgslxx0mpk2m7mgvvm";
+    sha256 = "0c7xs4imwfgyx59qxbinfi403vhki1n8src1g87qlqz28lzjz9jw";
   };
 
   pythonPath = with pythonPackages;
     [ pythonDBus pygobject pygobject3 recursivePthLoader ];
 
   buildInputs =
-    [ pkgconfig dbus.libs glib libusb alsaLib python pythonPackages.wrapPython
+    [ pkgconfig dbus.libs glib alsaLib python pythonPackages.wrapPython
       readline libsndfile udev libical
       # Disables GStreamer; not clear what it gains us other than a
       # zillion extra dependencies.
@@ -38,7 +38,8 @@ stdenv.mkDerivation rec {
     "--with-systemdsystemunitdir=$(out)/etc/systemd/system"
     "--with-systemduserunitdir=$(out)/etc/systemd/user"
     "--with-udevdir=$(out)/lib/udev"
-    ];
+    ] ++
+    stdenv.lib.optional enableWiimote [ "--enable-wiimote" ];
 
   # Work around `make install' trying to create /var/lib/bluetooth.
   installFlags = "statedir=$(TMPDIR)/var/lib/bluetooth";
@@ -71,6 +72,7 @@ stdenv.mkDerivation rec {
 
   meta = with stdenv.lib; {
     homepage = http://www.bluez.org/;
+    repositories.git = https://git.kernel.org/pub/scm/bluetooth/bluez.git;
     description = "Bluetooth support for Linux";
     platforms = platforms.linux;
   };

@@ -8,7 +8,8 @@ stdenv.mkDerivation rec {
     sha256 = "0zcwjav1qgr7ikmvfmy7g3nc7s1kj4j4939d18mpyha9mwy4mv6r";
   };
 
-  buildInputs = [ pkgconfig libnfnetlink libmnl ];
+  buildInputs = [ pkgconfig libmnl ];
+  propagatedBuildInputs = [ libnfnetlink ];
 
   meta = {
     description = "Userspace library providing an API to the in-kernel connection tracking state table";
@@ -19,8 +20,9 @@ stdenv.mkDerivation rec {
       by conntrack-tools among many other applications
     '';
     homepage = http://netfilter.org/projects/libnetfilter_conntrack/;
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
 
     platforms = stdenv.lib.platforms.linux;
+    maintainers = stdenv.lib.maintainers.nckx;
   };
 }

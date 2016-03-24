@@ -1,27 +1,21 @@
 { stdenv, fetchurl, kdevplatform, cmake, pkgconfig, automoc4, shared_mime_info,
-  kdebase_workspace, gettext, perl, okteta }:
+  kdebase_workspace, gettext, perl, okteta, qjson, kate, konsole, kde_runtime, oxygen_icons }:
 
 stdenv.mkDerivation rec {
   name = "${pname}-${version}";
-  version = "4.3.1";
+  version = "4.7.0";
   pname = "kdevelop";
 
   src = fetchurl {
-    url = "mirror://kde/stable/${pname}/${version}/src/${name}.tar.bz2";
-    sha256 = "0015hv39rqhyq1w6jw65lx7ls4l5pc3a2asvd5zsd65831vrfxxs";
+    url = "mirror://kde/stable/${pname}/${version}/src/${name}.tar.xz";
+    sha256 = "68de8f412e8ab6107766f00623e54c458d02825e3a70f5ea9969688f8c77c120";
   };
 
-  buildInputs = [ kdevplatform kdebase_workspace okteta ];
+  buildInputs = [ kdevplatform kdebase_workspace okteta qjson ];
 
   nativeBuildInputs = [ cmake pkgconfig automoc4 shared_mime_info gettext perl ];
 
-  patches =
-    [ ( fetchurl {
-        url = https://git.reviewboard.kde.org/r/105211/diff/raw/;
-        name = "okteta-0.9.patch"; # fixes build with KDE-4.9.x
-        sha256 = "1mvqhw7jr1vi66l3jgam3slyfafcvwy4g3iapfi69dpfnzhmcxl0";
-      } )
-    ];
+  propagatedUserEnvPkgs = [ kdevplatform kate konsole kde_runtime oxygen_icons ];
 
   NIX_CFLAGS_COMPILE = "-I${okteta}/include/KDE";
 

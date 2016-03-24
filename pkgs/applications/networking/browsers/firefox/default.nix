@@ -1,5 +1,5 @@
-{ stdenv, fetchurl, pkgconfig, gtk, pango, perl, python, zip, libIDL
-, libjpeg, libpng, zlib, dbus, dbus_glib, bzip2, xlibs
+{ lib, stdenv, fetchurl, pkgconfig, gtk, pango, perl, python, zip, libIDL
+, libjpeg, zlib, dbus, dbus_glib, bzip2, xlibs
 , freetype, fontconfig, file, alsaLib, nspr, nss, libnotify
 , yasm, mesa, sqlite, unzip, makeWrapper, pysqlite
 , hunspell, libevent, libstartup_notification, libvpx
@@ -13,35 +13,41 @@
   enableOfficialBranding ? false
 }:
 
-assert stdenv.gcc ? libc && stdenv.gcc.libc != null;
+assert stdenv.cc ? libc && stdenv.cc.libc != null;
 
-rec {
+let version = "35.0"; in
 
-  firefoxVersion = "26.0";
-
-  xulVersion = "26.0"; # this attribute is used by other packages
-
+stdenv.mkDerivation rec {
+  name = "firefox-${version}";
 
   src = fetchurl {
-    urls = [
-        # It is better to use this url for official releases, to take load off Mozilla's ftp server.
-        "http://releases.mozilla.org/pub/mozilla.org/firefox/releases/${firefoxVersion}/source/firefox-${firefoxVersion}.source.tar.bz2"
-        # Fall back to this url for versions not available at releases.mozilla.org.
-        "http://ftp.mozilla.org/pub/mozilla.org/firefox/releases/${firefoxVersion}/source/firefox-${firefoxVersion}.source.tar.bz2"
-    ];
-    sha1 = "f7c6642d6f62aea8d4eced48dd27aba0634edcd5";
+    url = "http://ftp.mozilla.org/pub/mozilla.org/firefox/releases/${version}/source/firefox-${version}.source.tar.bz2";
+    sha1 = "52f310f08ab5a52cd9d9be00016f0872a5e81774";
   };
 
-  commonConfigureFlags =
-    [ "--with-system-jpeg"
+  buildInputs =
+    [ pkgconfig gtk perl zip libIDL libjpeg zlib bzip2
+      python dbus dbus_glib pango freetype fontconfig xlibs.libXi
+      xlibs.libX11 xlibs.libXrender xlibs.libXft xlibs.libXt file
+      alsaLib nspr nss libnotify xlibs.pixman yasm mesa
+      xlibs.libXScrnSaver xlibs.scrnsaverproto pysqlite
+      xlibs.libXext xlibs.xextproto sqlite unzip makeWrapper
+      hunspell libevent libstartup_notification libvpx cairo
+      gstreamer gst_plugins_base icu
+    ];
+
+  configureFlags =
+    [ "--enable-application=browser"
+      "--disable-javaxpcom"
+      "--with-system-jpeg"
       "--with-system-zlib"
       "--with-system-bz2"
       "--with-system-nspr"
       "--with-system-nss"
       "--with-system-libevent"
       "--with-system-libvpx"
-      "--with-system-png"
-      "--with-system-icu"
+      # "--with-system-png" # needs APNG support
+      # "--with-system-icu" # causes ‘ar: invalid option -- 'L'’ in Firefox 28.0
       "--enable-system-ffi"
       "--enable-system-hunspell"
       "--enable-system-pixman"
@@ -56,143 +62,47 @@ rec {
       "--disable-necko-wifi" # maybe we want to enable this at some point
       "--disable-installer"
       "--disable-updater"
-    ] ++ (if debugBuild then [ "--enable-debug" "--enable-profiling"]
-                        else [ "--disable-debug" "--enable-release"
-                               "--enable-optimize" "--enable-strip" ]);
+      "--disable-pulseaudio"
+    ]
+    ++ (if debugBuild then [ "--enable-debug" "--enable-profiling"]
+                      else [ "--disable-debug" "--enable-release"
+                             "--enable-optimize${lib.optionalString (stdenv.system == "i686-linux") "=-O1"}"
+                             "--enable-strip" ])
+    ++ lib.optional enableOfficialBranding "--enable-official-branding";
 
+  enableParallelBuilding = true;
 
-  xulrunner = stdenv.mkDerivation rec {
-    name = "xulrunner-${xulVersion}";
+  preConfigure =
+    ''
+      mkdir ../objdir
+      cd ../objdir
+      configureScript=../mozilla-release/configure
+    '';
 
-    inherit src;
+  preInstall =
+    ''
+      # The following is needed for startup cache creation on grsecurity kernels.
+      paxmark m ../objdir/dist/bin/xpcshell
+    '';
 
-    buildInputs =
-      [ pkgconfig libpng gtk perl zip libIDL libjpeg zlib bzip2
-        python dbus dbus_glib pango freetype fontconfig xlibs.libXi
-        xlibs.libX11 xlibs.libXrender xlibs.libXft xlibs.libXt file
-        alsaLib nspr nss libnotify xlibs.pixman yasm mesa
-        xlibs.libXScrnSaver xlibs.scrnsaverproto pysqlite
-        xlibs.libXext xlibs.xextproto sqlite unzip makeWrapper
-        hunspell libevent libstartup_notification libvpx cairo
-        gstreamer gst_plugins_base icu
-      ];
+  postInstall =
+    ''
+      # For grsecurity kernels
+      paxmark m $out/lib/${name}/{firefox,firefox-bin,plugin-container}
 
-    configureFlags =
-      [ "--enable-application=xulrunner"
-        "--disable-javaxpcom"
-      ] ++ commonConfigureFlags;
+      # Remove SDK cruft. FIXME: move to a separate output?
+      rm -rf $out/share/idl $out/include $out/lib/firefox-devel-*
+    '';
 
-    enableParallelBuilding = true;
-
-    preConfigure =
-      ''
-        export NIX_LDFLAGS="$NIX_LDFLAGS -L$out/lib/xulrunner-${xulVersion}"
-
-        mkdir ../objdir
-        cd ../objdir
-        configureScript=../mozilla-release/configure
-      ''; # */
-
-    #installFlags = "SKIP_GRE_REGISTRATION=1";
-
-    postInstall = ''
-      # Fix run-mozilla.sh search
-      libDir=$(cd $out/lib && ls -d xulrunner-[0-9]*)
-      echo libDir: $libDir
-      test -n "$libDir"
-      cd $out/bin
-      rm xulrunner
-
-      for i in $out/lib/$libDir/*; do
-          file $i;
-          if file $i | grep executable &>/dev/null; then
-              echo -e '#! /bin/sh\nexec "'"$i"'" "$@"' > "$out/bin/$(basename "$i")";
-              chmod a+x "$out/bin/$(basename "$i")";
-          fi;
-      done
-      for i in $out/lib/$libDir/*.so; do
-          patchelf --set-rpath "$(patchelf --print-rpath "$i"):$out/lib/$libDir" $i || true
-      done
-      for i in $out/lib/$libDir/{plugin-container,xulrunner,xulrunner-stub}; do
-          wrapProgram $i --prefix LD_LIBRARY_PATH ':' "$out/lib/$libDir"
-      done
-      rm -f $out/bin/run-mozilla.sh
-    ''; # */
-
-    meta = {
-      description = "Mozilla Firefox XUL runner";
-      homepage = http://www.mozilla.com/en-US/firefox/;
-    };
-
-    passthru = { inherit gtk; version = xulVersion; };
+  meta = {
+    description = "Web browser";
+    homepage = http://www.mozilla.com/en-US/firefox/;
+    maintainers = with lib.maintainers; [ eelco ];
+    platforms = lib.platforms.linux;
   };
 
-
-  firefox = stdenv.mkDerivation rec {
-    name = "firefox-${firefoxVersion}";
-
-    inherit src;
-
-    enableParallelBuilding = true;
-
-    buildInputs =
-      [ pkgconfig libpng gtk perl zip libIDL libjpeg zlib bzip2 python
-        dbus dbus_glib pango freetype fontconfig alsaLib nspr nss libnotify
-        xlibs.pixman yasm mesa sqlite file unzip pysqlite
-        hunspell libevent libstartup_notification libvpx cairo
-        gstreamer gst_plugins_base icu
-      ];
-
-    patches = [
-      ./disable-reporter.patch # fixes "search box not working when built on xulrunner"
-      ./xpidl.patch
-    ];
-
-    propagatedBuildInputs = [xulrunner];
-
-    configureFlags =
-      [ "--enable-application=browser"
-        "--with-libxul-sdk=${xulrunner}/lib/xulrunner-devel-${xulrunner.version}"
-        "--enable-chrome-format=jar"
-      ]
-      ++ commonConfigureFlags
-      ++ stdenv.lib.optional enableOfficialBranding "--enable-official-branding";
-
-    makeFlags = [
-      "SYSTEM_LIBXUL=1"
-    ];
-
-    # Hack to work around make's idea of -lbz2 dependency
-    preConfigure =
-      ''
-        find . -name Makefile.in -execdir sed -i '{}' -e '1ivpath %.so ${
-          stdenv.lib.concatStringsSep ":"
-            (map (s : s + "/lib") (buildInputs ++ [stdenv.gcc.libc]))
-        }' ';'
-      '';
-
-    postInstall =
-      ''
-        ln -s ${xulrunner}/lib/xulrunner-${xulrunner.version} $(echo $out/lib/firefox-*)/xulrunner
-        cd "$out/lib/"firefox-*
-        rm firefox
-        echo -e '#!${stdenv.shell}\nexec ${xulrunner}/bin/xulrunner "'"$PWD"'/application.ini" "$@"' > firefox
-        chmod a+x firefox
-
-        # Put chrome.manifest etc. in the right place.
-        mv browser/* .
-        rmdir browser
-      ''; # */
-
-    meta = {
-      description = "Mozilla Firefox - the browser, reloaded";
-      homepage = http://www.mozilla.com/en-US/firefox/;
-      maintainers = [ stdenv.lib.maintainers.eelco ];
-    };
-
-    passthru = {
-      inherit gtk xulrunner nspr;
-      isFirefox3Like = true;
-    };
+  passthru = {
+    inherit gtk nspr version;
+    isFirefox3Like = true;
   };
 }

@@ -17,19 +17,35 @@ curl="curl \
  $NIX_CURL_FLAGS"
 
 
+downloadedFile="$out"
+if [ -n "$downloadToTemp" ]; then downloadedFile="$TMPDIR/file"; fi
+
+
 tryDownload() {
     local url="$1"
     echo
     header "trying $url"
+    local curlexit=18;
+
     success=
-    if $curl --fail "$url" --output "$out"; then
-        success=1
-    fi
+
+    # if we get error code 18, resume partial download
+    while [ $curlexit -eq 18 ]; do
+       # keep this inside an if statement, since on failure it doesn't abort the script
+       if $curl -C - --fail "$url" --output "$downloadedFile"; then
+          success=1
+          break
+       else
+          curlexit=$?;
+       fi
+    done
     stopNest
 }
 
 
 finish() {
+    set +o noglob
+    runHook postFetch
     stopNest
     exit 0
 }

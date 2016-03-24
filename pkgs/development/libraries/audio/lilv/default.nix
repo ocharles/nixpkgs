@@ -2,11 +2,11 @@
 
 stdenv.mkDerivation rec {
   name = "lilv-${version}";
-  version = "0.16.0";
+  version = "0.20.0";
 
   src = fetchurl {
     url = "http://download.drobilla.net/${name}.tar.bz2";
-    sha256 = "1ddrcikypi7gfmj5cqn975axzrgv7mhzif4h0ni9w5b4v64rvcyg";
+    sha256 = "0aj2plkx56iar8vzjbq2l7hi7sp0ml99m0h44rgwai2x4vqkk2j2";
   };
 
   buildInputs = [ lv2 pkgconfig python serd sord sratom ];
@@ -22,6 +22,6 @@ stdenv.mkDerivation rec {
     description = "A C library to make the use of LV2 plugins";
     license = licenses.mit;
     maintainers = [ maintainers.goibhniu ];
-
+    platforms = platforms.linux;
   };
 }

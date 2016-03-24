@@ -3,7 +3,7 @@
 stdenv.mkDerivation rec {
   name = "dovecot-2.1.17";
 
-  buildInputs = [openssl pam bzip2 zlib inotifyTools openldap];
+  buildInputs = [openssl bzip2 zlib openldap] ++ stdenv.lib.optionals stdenv.isLinux [pam inotifyTools];
 
   src = fetchurl {
     url = "http://dovecot.org/releases/2.1/${name}.tar.gz";
@@ -21,7 +21,7 @@ stdenv.mkDerivation rec {
     homepage = "http://dovecot.org/";
     description = "Open source IMAP and POP3 email server written with security primarily in mind";
     maintainers = with stdenv.lib.maintainers; [viric simons];
-    platforms = with stdenv.lib.platforms; linux;
+    hydraPlatforms = stdenv.lib.platforms.linux;
   };
 
 }

@@ -1,25 +1,25 @@
-{ stdenv, fetchurl, readline ? null, ncurses ? null }:
+{ lib, stdenv, fetchurl, interactive ? false, readline ? null, ncurses ? null }:
 
-assert readline != null -> ncurses != null;
+assert interactive -> readline != null && ncurses != null;
 
 stdenv.mkDerivation {
-  name = "sqlite-3.8.0.2";
+  name = "sqlite-3.8.7.1";
 
   src = fetchurl {
-    url = http://www.sqlite.org/2013/sqlite-autoconf-3080002.tar.gz;
-    sha1 = "294c30e882a0d45877bce09afe72d08ccfc6b650";
+    url = "http://www.sqlite.org/2014/sqlite-autoconf-3080701.tar.gz";
+    sha1 = "5601be1263842209d7c5dbf6128f1cc0b6bbe2e5";
   };
 
-  buildInputs = [ readline ncurses ];
+  buildInputs = lib.optionals interactive [ readline ncurses ];
 
   configureFlags = "--enable-threadsafe";
 
-  CFLAGS = "-DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_ENABLE_UNLOCK_NOTIFY=1";
-  LDFLAGS = if readline != null then "-lncurses" else "";
+  NIX_CFLAGS_COMPILE = "-DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_ENABLE_UNLOCK_NOTIFY=1";
 
   meta = {
     homepage = http://www.sqlite.org/;
     description = "A self-contained, serverless, zero-configuration, transactional SQL database engine";
     platforms = stdenv.lib.platforms.unix;
+    maintainers = [ stdenv.lib.maintainers.eelco ];
   };
 }

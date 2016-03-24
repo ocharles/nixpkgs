@@ -1,6 +1,6 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 let
   cfg = config.services.almir;
@@ -109,6 +109,7 @@ in {
       };
 
       sqlalchemy_engine_url = mkOption {
+        default = "postgresql:///bacula";
         example = ''
           postgresql://bacula:bacula@localhost:5432/bacula
           mysql+mysqlconnector://<user>:<password>@<hostname>/<database>'
@@ -154,7 +155,8 @@ in {
       description = "Almir web app";
       wantedBy = [ "multi-user.target" ];
       path = [ pkgs.pythonPackages.almir ];
-      serviceConfig.ExecStart = "${pkgs.pythonPackages.almir}/bin/pserve ${productionini}";
+      environment.PYTHONPATH = "${pkgs.pythonPackages.almir}/lib/${pkgs.pythonPackages.python.libPrefix}/site-packages";
+      serviceConfig.ExecStart = "${pkgs.pythonPackages.pyramid}/bin/pserve ${productionini}";
     };
 
     environment.systemPackages = [ pkgs.pythonPackages.almir ];

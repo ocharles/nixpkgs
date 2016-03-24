@@ -10,7 +10,7 @@ stdenv.mkDerivation rec {
 
   buildInputs = [ libxml2 openssl readline gawk ];
 
-  CPP = "${stdenv.gcc}/bin/gcc -E";
+  CPP = "${stdenv.cc}/bin/gcc -E";
 
   configureFlags = "
     --enable-shared --disable-all-vads --with-readline=${readline}
@@ -25,11 +25,12 @@ stdenv.mkDerivation rec {
     echo Removing jars and empty directories
     find $out -name "*.a" -delete -o -name "*.jar" -delete -o -type d -empty -delete
     '';
-  
+
   meta = with stdenv.lib; {
     description = "SQL/RDF database used by, e.g., KDE-nepomuk";
     homepage = http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/;
-    platforms = platforms.all;
+    #configure: The current version [...] can only be build on 64bit platforms
+    platforms = [ "x86_64-linux" "x86_64-darwin" ];
     maintainers = [ maintainers.urkud ];
   };
 }

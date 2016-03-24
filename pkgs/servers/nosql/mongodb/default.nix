@@ -1,37 +1,66 @@
-{ stdenv, fetchurl, scons, boost, v8, gperftools, pcre, snappy }:
+{ stdenv, fetchurl, scons, boost, gperftools, pcre, snappy
+, libyamlcpp, sasl, openssl, libpcap }:
 
-let version = "2.4.8"; in stdenv.mkDerivation rec {
+with stdenv.lib;
+
+let version = "2.6.6";
+    system-libraries = [
+      "pcre"
+      "boost"
+      "snappy"
+      # "stemmer" -- not nice to package yet (no versioning, no makefile, no shared libs)
+      "yaml"
+      # "v8"
+    ] ++ optionals (!stdenv.isDarwin) [ "tcmalloc" ];
+    buildInputs = [
+      sasl boost gperftools pcre snappy
+      libyamlcpp sasl openssl libpcap
+    ];
+
+    other-args = concatStringsSep " " ([
+      "--ssl"
+      "--use-sasl-client"
+      "--extrapath=${concatStringsSep "," buildInputs}"
+    ] ++ map (lib: "--use-system-${lib}") system-libraries);
+
+in stdenv.mkDerivation rec {
   name = "mongodb-${version}";
 
   src = fetchurl {
     url = "http://downloads.mongodb.org/src/mongodb-src-r${version}.tar.gz";
-    sha256 = "1p6gnharypglfp39halp72fig96fqjhakyy7m76a1prxwpjkqw7x";
+    sha256 = "0shb069xsqyslazdq66smr7ifppvdclbzpdjhrj2y3qb78y70pbm";
   };
 
-  nativeBuildInputs = [ scons boost v8 gperftools pcre snappy ];
+  nativeBuildInputs = [ scons ];
+  inherit buildInputs;
 
   postPatch = ''
+    # fix yaml-cpp detection
+    sed -i -e "s/\[\"yaml\"\]/\[\"yaml-cpp\"\]/" SConstruct
+
+    # bug #482576
+    sed -i -e "/-Werror/d" src/third_party/v8/SConscript
+
+    # fix environment variable reading
     substituteInPlace SConstruct \
-        --replace "Environment( BUILD_DIR" "Environment( ENV = os.environ, BUILD_DIR" \
-        --replace 'CCFLAGS=["-Werror", "-pipe"]' 'CCFLAGS=["-pipe"]'
+        --replace "Environment( BUILD_DIR" "Environment( ENV = os.environ, BUILD_DIR"
   '';
 
   buildPhase = ''
-    export SCONSFLAGS="-j$NIX_BUILD_CORES"
-    scons all --use-system-all
+    scons all --release ${other-args}
   '';
 
   installPhase = ''
     mkdir -p $out/lib
-    scons install --use-system-all --full --prefix=$out
+    scons install --release --prefix=$out ${other-args}
   '';
 
   meta = {
     description = "a scalable, high-performance, open source NoSQL database";
     homepage = http://www.mongodb.org;
-    license = "AGPLv3";
+    license = licenses.agpl3;
 
-    maintainers = [ stdenv.lib.maintainers.bluescreen303 ];
-    platforms = stdenv.lib.platforms.linux;
+    maintainers = with maintainers; [ bluescreen303 offline wkennington ];
+    platforms = platforms.unix;
   };
 }

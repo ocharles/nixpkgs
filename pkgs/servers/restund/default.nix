@@ -15,8 +15,8 @@ stdenv.mkDerivation rec {
     ''PREFIX=$(out)''
     "USE_MYSQL=1"
   ]
-  ++ stdenv.lib.optional (stdenv.gcc.gcc != null) "SYSROOT_ALT=${stdenv.gcc.gcc}"
-  ++ stdenv.lib.optional (stdenv.gcc.libc != null) "SYSROOT=${stdenv.gcc.libc}"
+  ++ stdenv.lib.optional (stdenv.cc.gcc != null) "SYSROOT_ALT=${stdenv.cc.gcc}"
+  ++ stdenv.lib.optional (stdenv.cc.libc != null) "SYSROOT=${stdenv.cc.libc}"
   ;
   NIX_LDFLAGS='' -L${mysql}/lib/mysql '';
   meta = {
@@ -24,5 +24,10 @@ stdenv.mkDerivation rec {
     platforms = with stdenv.lib.platforms; linux;
     maintainers = with stdenv.lib.maintainers; [raskin];
     license = with stdenv.lib.licenses; bsd3;
+    inherit version;
+    downloadPage = "http://www.creytiv.com/pub/";
+    updateWalker = true;
+    downloadURLRegexp = "/restund-.*[.]tar[.]";
+    broken = true; # probably due to glibc-2.20
   };
 }

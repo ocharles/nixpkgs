@@ -5,11 +5,11 @@
 stdenv.mkDerivation rec {
 
   name = "apparmor-${version}";
-  version = "2.8.2";
+  version = "2.8.4";
 
   src = fetchurl {
     url = "http://launchpad.net/apparmor/2.8/${version}/+download/${name}.tar.gz";
-    sha256 = "1fyjvfkvl0fc7agmz64ck8c965940xvcljrczq1z66sydivkybvl";
+    sha256 = "1mki4c44ljmr7dpn55grzn33929kdjx149jx00s80yp1war83jwq";
   };
 
   buildInputs = [
@@ -48,7 +48,7 @@ stdenv.mkDerivation rec {
     make
     make check
     make install
-    ensureDir $out/lib/perl5/site_perl/
+    mkdir -p $out/lib/perl5/site_perl/
     cp swig/perl/LibAppArmor.pm $out/lib/perl5/site_perl/
     cp swig/perl/LibAppArmor.bs $out/lib/perl5/site_perl/
     # this is automatically copied elsewhere....
@@ -77,9 +77,13 @@ stdenv.mkDerivation rec {
     cd ..
     cp -r  kernel-patches $out
   '';
-  installPhase = ''
+
+  installPhase = let
+    perlVersion = (builtins.parseDrvName perl.name).version;
+  in ''
     for i in $out/bin/*;  do
-      wrapProgram $i --prefix PERL5LIB : "$PERL5LIB:$out/lib/perl5/5.10.1/i686-linux-thread-multi/"
+      wrapProgram $i --prefix PERL5LIB : \
+        "$PERL5LIB:$out/lib/perl5/${perlVersion}/${stdenv.system}-thread-multi/"
     done
   '';
 
@@ -87,7 +91,7 @@ stdenv.mkDerivation rec {
     homepage = http://apparmor.net/;
     description = "Linux application security system";
     license = licenses.gpl2;
-    maintainers = [ maintainers.phreedom ];
+    maintainers = [ maintainers.phreedom maintainers.thoughtpolice ];
     platforms = platforms.linux;
   };
 }

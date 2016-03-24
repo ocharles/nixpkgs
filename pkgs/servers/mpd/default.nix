@@ -1,4 +1,4 @@
-{ stdenv, fetchurl, pkgconfig, glib, systemd
+{ stdenv, fetchurl, pkgconfig, glib, systemd, boost
 , alsaSupport ? true, alsaLib
 , flacSupport ? true, flac
 , vorbisSupport ? true, libvorbis
@@ -8,32 +8,34 @@
 , shoutSupport ? true, libshout
 , sqliteSupport ? true, sqlite
 , curlSupport ? true, curl
-, soupSupport ? true, libsoup
 , audiofileSupport ? true, audiofile
 , bzip2Support ? true, bzip2
-, ffadoSupport ? true, ffado
 , ffmpegSupport ? true, ffmpeg
 , fluidsynthSupport ? true, fluidsynth
 , zipSupport ? true, zziplib
 , samplerateSupport ? true, libsamplerate
 , mmsSupport ? true, libmms
 , mpg123Support ? true, mpg123
-, aacSupport ? true, faad2 }:
+, aacSupport ? true, faad2
+, pulseaudioSupport ? true, pulseaudio
+, jackSupport ? true, jack2
+, icuSupport ? true, icu
+}:
 
 let
-
   opt = stdenv.lib.optional;
-
   mkFlag = c: f: if c then "--enable-${f}" else "--disable-${f}";
+  major = "0.19";
+  minor = "6";
 
 in stdenv.mkDerivation rec {
-  name = "mpd-0.18.5";
+  name = "mpd-${major}.${minor}";
   src = fetchurl {
-    url    = "http://www.musicpd.org/download/mpd/stable/${name}.tar.gz";
-    sha256 = "1jhkpbwjmzicnkjl8nsfjdgsvqvkcdjm497rl081sy8mq1jzr80c";
+    url    = "http://www.musicpd.org/download/mpd/${major}/${name}.tar.gz";
+    sha256 = "023h2d9x4yg1z2glnwf8h2j0p1xhn1hb0wf02mg70j3p0bz63imj";
   };
 
-  buildInputs = [ pkgconfig glib ]
+  buildInputs = [ pkgconfig glib boost ]
     ++ opt stdenv.isLinux systemd
     ++ opt (stdenv.isLinux && alsaSupport) alsaLib
     ++ opt flacSupport flac
@@ -46,17 +48,18 @@ in stdenv.mkDerivation rec {
     ++ opt shoutSupport libshout
     ++ opt sqliteSupport sqlite
     ++ opt curlSupport curl
-    ++ opt soupSupport libsoup
     ++ opt bzip2Support bzip2
     ++ opt audiofileSupport audiofile
-    ++ opt (!stdenv.isDarwin && ffadoSupport) ffado
     ++ opt ffmpegSupport ffmpeg
     ++ opt fluidsynthSupport fluidsynth
     ++ opt samplerateSupport libsamplerate
     ++ opt mmsSupport libmms
     ++ opt mpg123Support mpg123
     ++ opt aacSupport faad2
-    ++ opt zipSupport zziplib;
+    ++ opt zipSupport zziplib
+    ++ opt pulseaudioSupport pulseaudio
+    ++ opt jackSupport jack2
+    ++ opt icuSupport icu;
 
   configureFlags =
     [ (mkFlag (!stdenv.isDarwin && alsaSupport) "alsa")
@@ -69,10 +72,8 @@ in stdenv.mkDerivation rec {
       (mkFlag shoutSupport "shout")
       (mkFlag sqliteSupport "sqlite")
       (mkFlag curlSupport "curl")
-      (mkFlag soupSupport "soup")
       (mkFlag audiofileSupport "audiofile")
       (mkFlag bzip2Support "bzip2")
-      (mkFlag (!stdenv.isDarwin && ffadoSupport) "ffado")
       (mkFlag ffmpegSupport "ffmpeg")
       (mkFlag fluidsynthSupport "fluidsynth")
       (mkFlag zipSupport "zzip")
@@ -80,7 +81,12 @@ in stdenv.mkDerivation rec {
       (mkFlag mmsSupport "mms")
       (mkFlag mpg123Support "mpg123")
       (mkFlag aacSupport "aac")
-      "--enable-debugging" ]
+      (mkFlag pulseaudioSupport "pulse")
+      (mkFlag jackSupport "jack")
+      (mkFlag stdenv.isDarwin "osx")
+      (mkFlag icuSupport "icu")
+      "--enable-debug"
+    ]
     ++ opt stdenv.isLinux
       "--with-systemdsystemunitdir=$(out)/etc/systemd/system";
 
@@ -92,7 +98,7 @@ in stdenv.mkDerivation rec {
     description = "A flexible, powerful daemon for playing music";
     homepage    = http://mpd.wikia.com/wiki/Music_Player_Daemon_Wiki;
     license     = licenses.gpl2;
-    maintainers = with maintainers; [ astsmtl ];
+    maintainers = with maintainers; [ astsmtl fuuzetsu ];
     platforms   = platforms.unix;
 
     longDescription = ''

@@ -14,12 +14,12 @@ assert sslSupport -> aprutil.sslSupport && openssl != null;
 assert ldapSupport -> aprutil.ldapSupport && openldap != null;
 
 stdenv.mkDerivation rec {
-  version = "2.4.7";
+  version = "2.4.10";
   name = "apache-httpd-${version}";
 
   src = fetchurl {
     url = "mirror://apache/httpd/httpd-${version}.tar.bz2";
-    sha256 = "06z7ij0avr8f3rvp6ifk3dn8j73i17cn4avz4fp1as43061qsdk4";
+    sha256 = "0slwcqw9f7fnb3kyz27hlsgh8j4wiza4yzqyp6vhfpvl3an4sv0p";
   };
 
   buildInputs = [perl] ++

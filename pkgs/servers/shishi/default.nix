@@ -1,14 +1,12 @@
 { fetchurl, stdenv, libtasn1, libgcrypt, gnutls }:
 
 stdenv.mkDerivation rec {
-  name = "shishi-1.0.1";
+  name = "shishi-1.0.2";
 
   src = fetchurl {
     url = "mirror://gnu/shishi/${name}.tar.gz";
-    sha256 = "13c6w9rpaqb3am65nrn86byvmll5r78pld2vb0i68491vww4fzlx";
+    sha256 = "032qf72cpjdfffq1yq54gz3ahgqf2ijca4vl31sfabmjzq9q370d";
   };
-
-  patches = [ ./no-gets.patch ];
 
   buildInputs = [ libtasn1 libgcrypt gnutls ] ;
 
@@ -18,7 +16,7 @@ stdenv.mkDerivation rec {
   doCheck = true;
 
   meta = {
-    description = "GNU Shishi, free implementation of the Kerberos 5 network security system";
+    description = "An implementation of the Kerberos 5 network security system";
     homepage    = http://www.gnu.org/software/shishi/;
     license     = stdenv.lib.licenses.gpl3Plus;
     maintainers = with stdenv.lib.maintainers; [ bjg lovek323 ];

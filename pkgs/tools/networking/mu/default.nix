@@ -1,18 +1,24 @@
-{ fetchurl, stdenv, sqlite, pkgconfig, xapian, glib, gmime, texinfo, emacs, guile
+{ fetchurl, stdenv, sqlite, pkgconfig, autoconf, automake
+, xapian, glib, gmime, texinfo , emacs, guile
 , gtk3, webkit, libsoup, icu, withMug ? false /* doesn't build with current gtk3 */ }:
 
 stdenv.mkDerivation rec {
-  version = "0.9.9.5";
+  version = "0.9.11";
   name = "mu-${version}";
 
   src = fetchurl {
-    url = "https://mu0.googlecode.com/files/mu-${version}.tar.gz";
-    sha256 = "1hwkliyb8fjrz5sw9fcisssig0jkdxzhccw0ld0l9a10q1l9mqhp";
+    url = "https://github.com/djcb/mu/archive/v${version}.tar.gz";
+    sha256 = "01n1lzq4pfsm5pn932p948d1z55yqc7kkm1ifjxjchb3k8lr66fh";
   };
 
   buildInputs =
-    [ sqlite pkgconfig xapian glib gmime texinfo emacs guile libsoup icu ]
+    [ sqlite pkgconfig autoconf automake xapian
+      glib gmime texinfo emacs guile libsoup icu ]
     ++ stdenv.lib.optional withMug [ gtk3 webkit ];
+
+  preConfigure = ''
+    autoreconf -i
+  '';
 
   preBuild = ''
     # Fix mu4e-builddir (set it to $out)
@@ -32,7 +38,7 @@ stdenv.mkDerivation rec {
 
   meta = {
     description = "A collection of utilties for indexing and searching Maildirs";
-    license = "GPLv3+";
+    license = stdenv.lib.licenses.gpl3Plus;
     homepage = "http://www.djcbsoftware.nl/code/mu/";
     platforms = stdenv.lib.platforms.mesaPlatforms;
     maintainers = with stdenv.lib.maintainers; [ antono the-kenny ];

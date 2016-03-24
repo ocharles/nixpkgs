@@ -31,6 +31,7 @@ stdenv.mkDerivation rec {
   enableParallelBuilding = true;
 
   meta = {
+    branch = "1.11";
     homepage = http://www.gnu.org/software/automake/;
     description = "GNU standard-compliant makefile generator";
 
@@ -40,8 +41,8 @@ stdenv.mkDerivation rec {
       Standards.  Automake requires the use of Autoconf.
     '';
 
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
 
-    maintainers = [ stdenv.lib.maintainers.ludo ];
+    maintainers = [ ];
   };
 }

@@ -1,11 +1,11 @@
 { stdenv, fetchurl, pkgconfig, dbus_glib, libxml2, libxslt, getopt, nixUnstable, dysnomia, libintlOrEmpty, libiconvOrEmpty }:
 
 stdenv.mkDerivation {
-  name = "disnix-0.3pre8aa12b65ced9029f7c17a494cee25e6ffc69fdea";
+  name = "disnix-0.3prea0484a2c19d1947c21f11b4fc7c3f6049bd11efa";
   
   src = fetchurl {
-    url = http://hydra.nixos.org/build/6763179/download/4/disnix-0.3pre8aa12b65ced9029f7c17a494cee25e6ffc69fdea.tar.gz;
-    sha256 = "0zmsaz1kvc7dl1igh6z74jxy3w5p2zbfm9jsczdjdh3947fkni4p";
+    url = http://hydra.nixos.org/build/14710186/download/4/disnix-0.3prea0484a2c19d1947c21f11b4fc7c3f6049bd11efa.tar.gz;
+    sha256 = "06qjaxysnkm31rgjlqy9n7p59q5v3jl57jm9jya7zf2g90syhdn7";
   };
   
   buildInputs = [ pkgconfig dbus_glib libxml2 libxslt getopt nixUnstable libintlOrEmpty libiconvOrEmpty dysnomia ];
@@ -14,7 +14,7 @@ stdenv.mkDerivation {
   
   meta = {
     description = "A distributed deployment extension for Nix";
-    license = "LGPLv2.1+";
+    license = stdenv.lib.licenses.lgpl21Plus;
     maintainers = [ stdenv.lib.maintainers.sander ];
   };
 }

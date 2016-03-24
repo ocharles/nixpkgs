@@ -9,7 +9,7 @@ stdenv.mkDerivation rec {
     sha256 = "01ahldvf0gc29dmbd5zi4rrnrw2i1ajnf30sx2vyaski3jv099fp";
   };
 
-  meta = {
+  meta = with stdenv.lib; {
     description = "Show battery status and other ACPI information";
     longDescription = ''
       Linux ACPI client is a small command-line
@@ -18,6 +18,8 @@ stdenv.mkDerivation rec {
       battery and thermal information.
     '';
     homepage = http://sourceforge.net/projects/acpiclient/;
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
+    platforms = platforms.linux;
+    maintainers = [ maintainers.mornfall ];
   };
 }

@@ -1,11 +1,11 @@
-{ stdenv, fetchurl, file, openssl, perl }:
+{ stdenv, fetchurl, autoreconfHook, file, openssl, perl, unzip }:
 
 stdenv.mkDerivation rec {
-  name = "net-snmp-5.7.2";
+  name = "net-snmp-5.7.3";
 
   src = fetchurl {
-    url = "mirror://sourceforge/net-snmp/${name}.tar.gz";
-    sha256 = "05mqrv22c65405d6v91cqf4hvczkkvvyy5lsxw8h8g0zrjs33v89";
+    url = "mirror://sourceforge/net-snmp/${name}.zip";
+    sha256 = "0gkss3zclm23zwpqfhddca8278id7pk6qx1mydpimdrrcndwgpz8";
   };
 
   preConfigure =
@@ -24,15 +24,18 @@ stdenv.mkDerivation rec {
       "--with-sys-contact=root@unknown"
       "--with-logfile=/var/log/net-snmpd.log"
       "--with-persistent-directory=/var/lib/net-snmp"
+      "--with-openssl=${openssl}"
     ];
 
-  buildInputs = [ file openssl perl ];
+  buildInputs = [ autoreconfHook file perl unzip openssl ];
 
   enableParallelBuilding = true;
 
-  meta = {
+  meta = with stdenv.lib; {
     description = "Clients and server for the SNMP network monitoring protocol";
     homepage = http://net-snmp.sourceforge.net/;
-    license = "bsd";
+    license = licenses.bsd3;
+    platforms = platforms.unix;
+    maintainers = with maintainers; [ wkennington ];
   };
 }

@@ -8,17 +8,22 @@ stdenv.mkDerivation rec {
     sha256 = "077ibkf84bvcd6rw1m6jb107br63i2pp301rkmsbgg6300adxp8x";
   };
 
+  patches = stdenv.lib.optional (stdenv.needsPax) ./libffi-3.0.13-emutramp_pax_proc.patch;
+
   buildInputs = stdenv.lib.optional doCheck dejagnu;
 
-  configureFlags = [ "--with-gcc-arch=generic" ]; # no detection of -march= or -mtune=
+  configureFlags = [
+    "--with-gcc-arch=generic" # no detection of -march= or -mtune=
+  ] ++ stdenv.lib.optional (stdenv.needsPax) "--enable-pax_emutramp";
 
-  doCheck = stdenv.isLinux; # until we solve dejagnu problems on darwin and expect on BSD
+  #doCheck = stdenv.isLinux; # until we solve dejagnu problems on darwin and expect on BSD
+  doCheck = false;
 
   dontStrip = stdenv ? cross; # Don't run the native `strip' when cross-compiling.
 
   postInstall =
     # Install headers in the right place.
-    '' ln -s${if stdenv.isFreeBSD then "" else "r"}v "$out/lib/"libffi*/include "$out/include"
+    '' ln -s${if stdenv.isBSD then "" else "r"}v "$out/lib/"libffi*/include "$out/include"
     '';
 
   meta = {
@@ -42,10 +47,9 @@ stdenv.mkDerivation rec {
     homepage = http://sourceware.org/libffi/;
 
     # See http://github.com/atgreen/libffi/blob/master/LICENSE .
-    license = "free, non-copyleft";
+    license = stdenv.lib.licenses.free;
 
-    maintainers = [ stdenv.lib.maintainers.ludo ];
+    maintainers = [ ];
     platforms = stdenv.lib.platforms.all;
   };
 }
-

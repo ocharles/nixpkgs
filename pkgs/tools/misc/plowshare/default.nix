@@ -1,14 +1,15 @@
-{ stdenv, fetchurl, makeWrapper, curl }:
+{ stdenv, fetchgit, makeWrapper, curl, spidermonkey }:
 
 stdenv.mkDerivation rec {
 
   name = "plowshare4-${version}";
 
-  version = "20121126.47e4480";
+  version = "1.1.0";
 
-  src = fetchurl {
-    url = "http://plowshare.googlecode.com/files/plowshare4-snapshot-git${version}.tar.gz";
-    sha256 = "1p7bqqfbgcy41hiickgr8cilspyvrrql12rdmfasz0dmgf7nx1x6";
+  src = fetchgit {
+    url = "https://code.google.com/p/plowshare/";
+    rev = "87bd955e681ddda05009ca8594d727260989d5ed";
+    sha256 = "0cbsnalmr6fa1ijsn1j1p9fdqi3ii96bx3xabgvvbbqkl7q938f9";
   };
 
   buildInputs = [ makeWrapper ];
@@ -19,7 +20,7 @@ stdenv.mkDerivation rec {
     make PREFIX="$out" install
 
     for fn in plow{del,down,list,up}; do
-      wrapProgram "$out/bin/$fn" --prefix PATH : "${curl}/bin"
+      wrapProgram "$out/bin/$fn" --prefix PATH : "${curl}/bin:${spidermonkey}/bin"
     done
   '';
 

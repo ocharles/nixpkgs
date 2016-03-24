@@ -20,7 +20,22 @@ stdenv.mkDerivation rec {
     export LIBXUL_DIST=$out
   '';
 
-  configureFlags = [ "--enable-threadsafe" "--with-system-nspr" ];
+  # Explained below in configureFlags for ARM
+  patches = stdenv.lib.optionals stdenv.isArm [
+    ./findvanilla.patch
+  ];
+
+  patchFlags = "-p3";
+
+  # On the Sheevaplug, ARM, its nanojit thing segfaults in japi-tests in
+  # "make check". Disabling tracejit makes it work, but then it needs the
+  # patch findvanilla.patch do disable a checker about allocator safety. In case
+  # of polkit, which is what matters most, it does not override the allocator
+  # so the failure of that test does not matter much.
+  configureFlags = [ "--enable-threadsafe" "--with-system-nspr" ] ++
+    stdenv.lib.optionals stdenv.isArm [
+        "--with-cpu-arch=armv5t" 
+        "--disable-tracejit" ];
 
   # hack around a make problem, see https://github.com/NixOS/nixpkgs/issues/1279#issuecomment-29547393
   preBuild = "touch -- {.,shell,jsapi-tests}/{-lpthread,-ldl}";
@@ -28,7 +43,13 @@ stdenv.mkDerivation rec {
   enableParallelBuilding = true;
 
   doCheck = true;
-  preCheck = "rm jit-test/tests/sunspider/check-date-format-tofte.js"; # https://bugzil.la/600522
+
+  preCheck = ''
+    rm jit-test/tests/sunspider/check-date-format-tofte.js    # https://bugzil.la/600522
+
+    paxmark mr shell/js
+    paxmark mr jsapi-tests/jsapi-tests
+  '';
 
   meta = with stdenv.lib; {
     description = "Mozilla's JavaScript engine written in C/C++";

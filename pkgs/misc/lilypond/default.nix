@@ -1,10 +1,11 @@
 { stdenv, fetchurl, ghostscript, texinfo, imagemagick, texi2html, guile
 , python, gettext, flex, perl, bison, pkgconfig, texLive, dblatex
-, fontconfig, freetype, pango, fontforge, help2man, zip, netpbm, groff 
-, fetchsvn, makeWrapper }:
+, fontconfig, freetype, pango, fontforge, help2man, zip, netpbm, groff
+, fetchsvn, makeWrapper, t1utils
+}:
 
 stdenv.mkDerivation rec{
-  majorVersion="2.16";
+  majorVersion="2.18";
   minorVersion="2";
   version="${majorVersion}.${minorVersion}";
   name = "lilypond-${version}";
@@ -16,7 +17,7 @@ stdenv.mkDerivation rec{
 
   src = fetchurl {
     url = "http://download.linuxaudio.org/lilypond/sources/v${majorVersion}/lilypond-${version}.tar.gz";
-    sha256 = "1jx11bk3rk3w7bnh0829yy280627ywsvwg6fhdm0fqwkiz7jchqz";
+    sha256 = "01xs9x2wjj7w9appaaqdhk15r1xvvdbz9qwahzhppfmhclvp779j";
   };
 
   preConfigure=''
@@ -24,7 +25,7 @@ stdenv.mkDerivation rec{
   '';
 
   postInstall = ''
-    for f in "$out"/bin/*; do
+    for f in "$out/bin/"*; do
         wrapProgram "$f" --set GUILE_AUTO_COMPILE 0 \
                          --set PATH "${ghostscript}/bin"
     done
@@ -35,10 +36,10 @@ stdenv.mkDerivation rec{
   buildInputs =
     [ ghostscript texinfo imagemagick texi2html guile dblatex zip netpbm
       python gettext flex perl bison pkgconfig texLive fontconfig freetype pango
-      fontforge help2man groff makeWrapper
+      fontforge help2man groff makeWrapper t1utils
     ];
 
-  meta = { 
+  meta = {
     description = "Music typesetting system";
     homepage = http://lilypond.org/;
     license = "GPL";

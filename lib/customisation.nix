@@ -1,6 +1,6 @@
-let lib = import ./default.nix;
-    inherit (builtins) getAttr attrNames isFunction;
-
+let
+  lib = import ./default.nix;
+  inherit (builtins) attrNames isFunction;
 in
 
 rec {
@@ -62,7 +62,16 @@ rec {
             makeOverridable f (origArgs // (if builtins.isFunction newArgs then newArgs origArgs else newArgs));
           deepOverride = newArgs:
             makeOverridable f (lib.overrideExisting (lib.mapAttrs (deepOverrider newArgs) origArgs) newArgs);
+          overrideDerivation = fdrv:
+            makeOverridable (args: overrideDerivation (f args) fdrv) origArgs;
         })
+      else if builtins.isFunction ff then
+        { override = newArgs:
+            makeOverridable f (origArgs // (if builtins.isFunction newArgs then newArgs origArgs else newArgs));
+          __functor = self: ff;
+          deepOverride = throw "deepOverride not yet supported for functors";
+          overrideDerivation = throw "overrideDerivation not yet supported for functors";
+        }
       else ff;
 
   deepOverrider = newArgs: name: x: if builtins.isAttrs x then (
@@ -107,10 +116,10 @@ rec {
       outputToAttrListElement = outputName:
         { name = outputName;
           value = commonAttrs // {
-            inherit (builtins.getAttr outputName drv) outPath drvPath type outputName;
+            inherit (drv.${outputName}) outPath drvPath type outputName;
           };
         };
 
       outputsList = map outputToAttrListElement outputs;
-  in builtins.getAttr drv.outputName commonAttrs;
+  in commonAttrs.${drv.outputName};
 }

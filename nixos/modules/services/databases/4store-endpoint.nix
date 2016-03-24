@@ -1,10 +1,10 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 let
   cfg = config.services.fourStoreEndpoint;
   endpointUser = "fourstorehttp";
   run = "${pkgs.su}/bin/su -s ${pkgs.stdenv.shell} ${endpointUser} -c";
 in
-with pkgs.lib;
+with lib;
 {
 
   ###### interface
@@ -54,16 +54,15 @@ with pkgs.lib;
 
     users.extraUsers = singleton
       { name = endpointUser;
-        uid = config.ids.uids.fourStoreEndpoint;
+        uid = config.ids.uids.fourstorehttp;
         description = "4Store SPARQL endpoint user";
-#        home = stateDir;
       };
 
     services.avahi.enable = true;
 
     jobs.fourStoreEndpoint = {
       name = "4store-endpoint";
-      startOn = "filesystem";
+      startOn = "ip-up";
 
       exec = ''
         ${run} '${pkgs.rdf4store}/bin/4s-httpd -D ${cfg.options} ${if cfg.listenAddress!=null then "-H ${cfg.listenAddress}" else "" } -p ${toString cfg.port} ${cfg.database}'

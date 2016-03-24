@@ -1,6 +1,6 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 let
   cfg = config.services.apcupsd;
@@ -161,6 +161,7 @@ in
         # systemd kills it with SIGKILL.
         TimeoutStopSec = 5;
       };
+      unitConfig.Documentation = "man:apcupsd(8)";
     };
 
     # A special service to tell the UPS to power down/hibernate just before the
@@ -168,11 +169,11 @@ in
     # shuts off power.) Copied from here:
     # http://forums.opensuse.org/english/get-technical-help-here/applications/479499-apcupsd-systemd-killpower-issues.html
     systemd.services.apcupsd-killpower = {
+      description = "APC UPS Kill Power";
       after = [ "shutdown.target" ]; # append umount.target?
       before = [ "final.target" ];
       wantedBy = [ "shutdown.target" ];
       unitConfig = {
-        Description = "APC UPS Kill Power";
         ConditionPathExists = "/run/apcupsd/powerfail";
         DefaultDependencies = "no";
       };

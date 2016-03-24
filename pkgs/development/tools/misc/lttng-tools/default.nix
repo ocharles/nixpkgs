@@ -1,16 +1,19 @@
-{ stdenv, fetchurl, popt, libuuid, liburcu, lttngUst }:
+{ stdenv, fetchurl, popt, libuuid, liburcu, lttng-ust, kmod, libxml2 }:
 
 stdenv.mkDerivation rec {
-  name = "lttng-tools-2.3.0";
+  name = "lttng-tools-2.5.2";
 
   src = fetchurl {
     url = "https://lttng.org/files/lttng-tools/${name}.tar.bz2";
-    sha256 = "16j55xqrh00mjbcvdmdkfxchavi7jsxlpnfjqc1g1d3x65ss9wri";
+    sha256 = "0g931f90pl9bfgsxihrj0zlw9ivyaplbiw28axkscmjvzd1d6lhz";
   };
 
-  buildInputs = [ popt libuuid liburcu lttngUst ];
+  buildInputs = [ popt libuuid liburcu lttng-ust libxml2 ];
 
-  patches = [ ./lttng-change-modprobe-path-from-sbin-modprobe-to-modprobe.patch ];
+  prePatch = ''
+    sed -e "s|/sbin/modprobe|${kmod}/sbin/modprobe|g" \
+        -i src/bin/lttng-sessiond/modprobe.c
+  '';
 
   meta = with stdenv.lib; {
     description = "Tracing tools (kernel + user space) for Linux";

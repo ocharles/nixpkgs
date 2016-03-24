@@ -1,22 +1,19 @@
-{ stdenv, fetchurl, which, screen }:
+{ stdenv, fetchurl, texinfo }:
 
 stdenv.mkDerivation rec {
-  name = "wdiff-1.1.2";
+  name = "wdiff-1.2.2";
 
   src = fetchurl {
     url = "mirror://gnu/wdiff/${name}.tar.gz";
-    sha256 = "0q78y5awvjjmsvizqilbpwany62shlmlq2ayxkjbygmdafpk1k8j";
+    sha256 = "0sxgg0ms5lhi4aqqvz1rj4s77yi9wymfm3l3gbjfd1qchy66kzrl";
   };
 
-  # Required for the compile-time for the test suite.
-  buildInputs = [ which screen ];
-
-  doCheck = true;
+  buildInputs = [ texinfo ];
 
   meta = {
     homepage = http://www.gnu.org/software/wdiff/;
-    description = "GNU wdiff, comparing files on a word by word basis";
-    license = "GPLv3+";
+    description = "Comparing files on a word by word basis";
+    license = stdenv.lib.licenses.gpl3Plus;
     maintainers = [ stdenv.lib.maintainers.eelco ];
     platforms = stdenv.lib.platforms.linux;
   };

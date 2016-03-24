@@ -1,23 +1,28 @@
 { stdenv, fetchurl, flex, bison }:
 
 stdenv.mkDerivation rec {
-  name = "libpcap-1.4.0";
+  name = "libpcap-1.5.3";
   
   src = fetchurl {
     url = "http://www.tcpdump.org/release/${name}.tar.gz";
-    sha256 = "01klphfqxvkyjvic0hmc10qmiicqz6pv6kvb9s00kaz8f57jlskw";
+    sha256 = "14wyjywrdi1ikaj6yc9c72m6m2r64z94lb0gm7k1a3q6q5cj3scs";
   };
   
   nativeBuildInputs = [ flex bison ];
   
-  configureFlags = "--with-pcap=linux";
+  # We need to force the autodetection because detection doesn't
+  # work in pure build enviroments.
+  configureFlags =
+    if stdenv.isLinux then [ "--with-pcap=linux" ]
+    else if stdenv.isDarwin then [ "--with-pcap=bpf" ]
+    else [];
 
   preInstall = ''mkdir -p $out/bin'';
   
   crossAttrs = {
     # Stripping hurts in static libraries
     dontStrip = true;
-    configureFlags = [ "--with-pcap=linux" "ac_cv_linux_vers=2" ];
+    configureFlags = configureFlags ++ [ "ac_cv_linux_vers=2" ];
   };
 
   meta = {

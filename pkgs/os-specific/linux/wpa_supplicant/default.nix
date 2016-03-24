@@ -5,13 +5,13 @@
 assert readlineSupport -> readline != null;
 
 stdenv.mkDerivation rec {
-  version = "2.0";
+  version = "2.3";
 
   name = "wpa_supplicant-${version}";
 
   src = fetchurl {
     url = "http://hostap.epitest.fi/releases/${name}.tar.gz";
-    sha256 = "02cy6wrs4nzm7wbq9mc1vby8lnj58k4sb10h718ks8mmzc4mc49c";
+    sha256 = "0skvkl6c10ls4s48b2wmf47h9j1y40nlzxnzn8hyaw2j0prmpapa";
   };
 
   extraConfig =
@@ -31,6 +31,7 @@ stdenv.mkDerivation rec {
     echo "$extraConfig" >> .config
     cat .config
     substituteInPlace Makefile --replace /usr/local $out
+    export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -I$(echo "${libnl}"/include/libnl*/)"
   '';
 
   buildInputs = [ openssl dbus_libs libnl ]
@@ -38,18 +39,18 @@ stdenv.mkDerivation rec {
 
   nativeBuildInputs = [ pkgconfig ];
 
-  patches = [ ./libnl.patch ];
+  patches = [];
 
   postInstall = ''
     mkdir -p $out/share/man/man5 $out/share/man/man8
-    cp -v doc/docbook/*.5 $out/share/man/man5/
-    cp -v doc/docbook/*.8 $out/share/man/man8/
+    cp -v "doc/docbook/"*.5 $out/share/man/man5/
+    cp -v "doc/docbook/"*.8 $out/share/man/man8/
     mkdir -p $out/etc/dbus-1/system.d $out/share/dbus-1/system-services $out/etc/systemd/system
-    cp -v dbus/*service $out/share/dbus-1/system-services
-    sed -e "s@/sbin/wpa_supplicant@$out&@" -i $out/share/dbus-1/system-services/*
+    cp -v "dbus/"*service $out/share/dbus-1/system-services
+    sed -e "s@/sbin/wpa_supplicant@$out&@" -i "$out/share/dbus-1/system-services/"*
     cp -v dbus/dbus-wpa_supplicant.conf $out/etc/dbus-1/system.d
-    cp -v systemd/*.service $out/etc/systemd/system
-  ''; # */
+    cp -v "systemd/"*.service $out/etc/systemd/system
+  '';
 
   meta = {
     homepage = http://hostap.epitest.fi/wpa_supplicant/;

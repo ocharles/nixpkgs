@@ -3,11 +3,11 @@
 # at runtime, need jre or jdk
 
 stdenv.mkDerivation rec {
-  name = "scala-2.9.2";
+  name = "scala-2.9.3";
 
   src = fetchurl {
-    url = "http://www.scala-lang.org/downloads/distrib/files/${name}.tgz";
-    sha256 = "0s1shpzw2hyz7bwxdqq19rcrzbpq4d7b0kvdvjvhy7h05x496b46";
+    url = "http://www.scala-lang.org/files/archive/${name}.tgz";
+    sha256 = "faaab229f78c945063e8fd31c045bc797c731194296d7a4f49863fd87fc4e7b9";
   };
 
   installPhase = ''
@@ -28,7 +28,8 @@ stdenv.mkDerivation rec {
       compared to an equivalent Java application.
     '';
     homepage = http://www.scala-lang.org/;
-    license = "BSD";
+    license = stdenv.lib.licenses.bsd3;
     platforms = stdenv.lib.platforms.all;
+    branch = "2.9";
   };
 }

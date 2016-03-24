@@ -5,18 +5,18 @@
 }:
 
 stdenv.mkDerivation rec {
-  name = "nix-1.6.1";
+  name = "nix-1.8";
 
   src = fetchurl {
     url = "http://nixos.org/releases/nix/${name}/${name}.tar.xz";
-    sha256 = "31d15f99b2405924a4be278334cc973a71999303631e6798c1d294db9be4bf84";
+    sha256 = "a30a5e801bc1cb1019cbc3456d961a307c45c9c588b8692cf1293ea6588ef01c";
   };
-
-  patches = [ ./hash-check.patch ];
 
   nativeBuildInputs = [ perl pkgconfig ];
 
-  buildInputs = [ curl openssl boehmgc sqlite ];
+  buildInputs = [ curl openssl sqlite ];
+
+  propagatedBuildInputs = [ boehmgc ];
 
   # Note: bzip2 is not passed as a build input, because the unpack phase
   # would end up using the wrong bzip2 when cross-compiling.
@@ -24,6 +24,7 @@ stdenv.mkDerivation rec {
   postUnpack =
     '' export CPATH="${bzip2}/include"
        export LIBRARY_PATH="${bzip2}/lib"
+       export CXXFLAGS="-Wno-error=reserved-user-defined-literal"
     '';
 
   configureFlags =
@@ -34,7 +35,6 @@ stdenv.mkDerivation rec {
       --with-www-curl=${perlPackages.WWWCurl}/${perl.libPrefix}
       --disable-init-state
       --enable-gc
-      CFLAGS=-O3 CXXFLAGS=-O3
     '';
 
   makeFlags = "profiledir=$(out)/etc/profile.d";
@@ -57,7 +57,6 @@ stdenv.mkDerivation rec {
         --with-www-curl=${perlPackages.WWWCurl}/${perl.libPrefix}
         --disable-init-state
         --enable-gc
-        CFLAGS=-O3 CXXFLAGS=-O3
       '' + stdenv.lib.optionalString (
           stdenv.cross ? nix && stdenv.cross.nix ? system
       ) ''--with-system=${stdenv.cross.nix.system}'';
@@ -68,9 +67,16 @@ stdenv.mkDerivation rec {
   enableParallelBuilding = true;
 
   meta = {
-    description = "The Nix Deployment System";
+    description = "Powerful package manager that makes package management reliable and reproducible";
+    longDescription = ''
+      Nix is a powerful package manager for Linux and other Unix systems that
+      makes package management reliable and reproducible. It provides atomic
+      upgrades and rollbacks, side-by-side installation of multiple versions of
+      a package, multi-user package management and easy setup of build
+      environments.
+    '';
     homepage = http://nixos.org/;
-    license = "LGPLv2+";
+    license = stdenv.lib.licenses.lgpl2Plus;
     maintainers = [ stdenv.lib.maintainers.eelco ];
     platforms = stdenv.lib.platforms.all;
   };

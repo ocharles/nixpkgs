@@ -1,6 +1,6 @@
-{ stdenv, fetchurl, libxml2 }:
+{ stdenv, fetchurl, libxml2, findXMLCatalogs }:
 
-stdenv.mkDerivation (rec {
+stdenv.mkDerivation rec {
   name = "libxslt-1.1.28";
 
   src = fetchurl {
@@ -10,20 +10,9 @@ stdenv.mkDerivation (rec {
 
   buildInputs = [ libxml2 ];
 
-  postInstall = ''
-    mkdir -p $out/nix-support
-    ln -s ${libxml2}/nix-support/setup-hook $out/nix-support/
-  '';
+  propagatedBuildInputs = [ findXMLCatalogs ];
 
-  meta = {
-    homepage = http://xmlsoft.org/XSLT/;
-    description = "A C library and tools to do XSL transformations";
-    license = "bsd";
-    platforms = stdenv.lib.platforms.unix;
-    maintainers = [ stdenv.lib.maintainers.eelco ];
-  };
-} // (if !stdenv.isFreeBSD then {} else {
-  buildInputs = [];
+  patches = stdenv.lib.optionals stdenv.isSunOS [ ./patch-ah.patch ];
 
   configureFlags = [
     "--with-libxml-prefix=${libxml2}"
@@ -33,4 +22,12 @@ stdenv.mkDerivation (rec {
     "--without-mem-debug"
     "--without-debugger"
   ];
-}))
+
+  meta = {
+    homepage = http://xmlsoft.org/XSLT/;
+    description = "A C library and tools to do XSL transformations";
+    license = "bsd";
+    platforms = stdenv.lib.platforms.unix;
+    maintainers = [ stdenv.lib.maintainers.eelco ];
+  };
+}

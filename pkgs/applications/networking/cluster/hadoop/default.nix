@@ -2,11 +2,11 @@
 
 stdenv.mkDerivation rec {
 
-  name = "hadoop-2.0.2-alpha";
+  name = "hadoop-2.2.0";
 
   src = fetchurl {
     url = "mirror://apache/hadoop/common/${name}/${name}.tar.gz";
-    sha256 = "1r7ailmqhny3pl5nb8bcblnhckszy6hb9n58kwa3s4b8qfk87gkb";
+    sha256 = "0r0kx8arsrvmcfy0693hpv4cz3i0razvk1xa3yhlf3ybb80a8106";
   };
 
   buildInputs = [ makeWrapper ];
@@ -15,7 +15,7 @@ stdenv.mkDerivation rec {
     for n in "bin/"* "sbin/"*; do
       sed -i $n -e "s|#!/usr/bin/env bash|#! ${bash}/bin/bash|"
     done
-    patchelf --set-interpreter "$(cat $NIX_GCC/nix-support/dynamic-linker)" bin/container-executor
+    patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" bin/container-executor
   '';
 
   installPhase = ''

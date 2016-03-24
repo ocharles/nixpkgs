@@ -1,14 +1,14 @@
 { stdenv, fetchurl, zlib, ncurses ? null, perl ? null, pam }:
-let
-  ver = "2.24";
-in
+
 stdenv.mkDerivation rec {
-  name = "util-linux-${ver}";
+  name = "util-linux-2.25.2";
 
   src = fetchurl {
-    url = "http://www.kernel.org/pub/linux/utils/util-linux/v${ver}/${name}.tar.bz2";
-    sha256 = "1nfnymj03rdcxjb677a9qq1zirppr8csh32cb85qm23x5xndi6v3";
+    url = "mirror://kernel/linux/utils/util-linux/v2.25/${name}.tar.xz";
+    sha256 = "e0457f715b73f4a349e1acb08cb410bf0edc9a74a3f75c357070f31f70e33cd6";
   };
+
+  patches = [ ./rtcwake-search-PATH-for-shutdown.patch ];
 
   crossAttrs = {
     # Work around use of `AC_RUN_IFELSE'.
@@ -19,8 +19,6 @@ stdenv.mkDerivation rec {
   # (/sbin/mount.*) through an environment variable, but that's
   # somewhat risky because we have to consider that mount can setuid
   # root...
-  # --enable-libmount-mount  fixes the behaviour being /etc/mtab a symlink to /proc/monunts
-  #     http://pl.digipedia.org/usenet/thread/19513/1924/
   configureFlags = ''
     --enable-write
     --enable-last
@@ -35,6 +33,10 @@ stdenv.mkDerivation rec {
     [ zlib pam ]
     ++ stdenv.lib.optional (ncurses != null) ncurses
     ++ stdenv.lib.optional (perl != null) perl;
+
+  postInstall = ''
+    rm $out/bin/su # su should be supplied by the su package (shadow)
+  '';
 
   enableParallelBuilding = true;
 

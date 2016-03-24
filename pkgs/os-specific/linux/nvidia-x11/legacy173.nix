@@ -1,6 +1,6 @@
 {stdenv, fetchurl, kernel, xlibs, zlib, gtk, atk, pango, glib, gdk_pixbuf}:
 
-let 
+let
 
   versionNumber = "173.14.39";
 
@@ -8,9 +8,9 @@ in
 
 stdenv.mkDerivation {
   name = "nvidia-x11-${versionNumber}-${kernel.version}";
-  
-  builder = ./builder-legacy.sh;
-  
+
+  builder = ./builder-legacy173.sh;
+
   src =
     if stdenv.system == "i686-linux" then
       fetchurl {
@@ -32,13 +32,13 @@ stdenv.mkDerivation {
 
   glPath = stdenv.lib.makeLibraryPath [xlibs.libXext xlibs.libX11 xlibs.libXrandr];
 
-  cudaPath = stdenv.lib.makeLibraryPath [zlib stdenv.gcc.gcc];
+  cudaPath = stdenv.lib.makeLibraryPath [zlib stdenv.cc.gcc];
 
   programPath = stdenv.lib.makeLibraryPath [ gtk atk pango glib gdk_pixbuf xlibs.libXv ];
 
   meta = {
     homepage = http://www.nvidia.com/object/unix.html;
     description = "X.org driver and kernel module for Legacy NVIDIA graphics cards";
-    license = "unfree";
+    license = stdenv.lib.licenses.unfree;
   };
 }

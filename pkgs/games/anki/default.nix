@@ -6,13 +6,16 @@
 
 let
     py = pythonPackages;
+    version = "2.0.31";
 in
-
 stdenv.mkDerivation rec {
-    name = "anki-2.0.20";
+    name = "anki-${version}";
     src = fetchurl {
-      url = "http://ankisrs.net/download/mirror/${name}.tgz";
-      sha256 = "1w274g7as458bfkh86635p04fimvmkn70j8qy9m6nl2xwjaq8nhm";
+      urls = [
+        "http://ankisrs.net/download/mirror/${name}.tgz"
+        "http://ankisrs.net/download/mirror/archive/${name}.tgz"
+      ];
+      sha256 = "0bxy4pq9yq78g0ffnlkpqj91ri0w4xqgv8mqksddn02v4llrd5jb";
     };
 
     pythonPath = [ pyqt4 py.pysqlite py.sqlalchemy py.pyaudio ]
@@ -55,7 +58,7 @@ stdenv.mkDerivation rec {
         decrease your time spent studying, or greatly increase the amount you learn.
 
         Anyone who needs to remember things in their daily life can benefit from
-        Anki. Since it is content-agnostic and supports images, audio, videos and 
+        Anki. Since it is content-agnostic and supports images, audio, videos and
         scientific markup (via LaTeX), the possibilities are endless. For example:
 
         * learning a language
@@ -65,7 +68,7 @@ stdenv.mkDerivation rec {
         * mastering long poems
         * even practicing guitar chords!
       '';
-      license = "GPLv3";
+      license = stdenv.lib.licenses.gpl3;
       maintainers = with stdenv.lib.maintainers; [ the-kenny ];
       platforms = stdenv.lib.platforms.mesaPlatforms;
     };

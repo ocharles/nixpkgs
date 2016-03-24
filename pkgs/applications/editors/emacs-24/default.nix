@@ -2,39 +2,43 @@
 , pkgconfig, gtk, libXft, dbus, libpng, libjpeg, libungif
 , libtiff, librsvg, texinfo, gconf, libxml2, imagemagick, gnutls
 , alsaLib, cairo
-, withX ? !stdenv.isDarwin
+, withX ? !stdenv.isDarwin, withGTK ? true
 }:
 
 assert (libXft != null) -> libpng != null;	# probably a bug
 assert stdenv.isDarwin -> libXaw != null;	# fails to link otherwise
 
 stdenv.mkDerivation rec {
-  name = "emacs-24.3";
+  name = "emacs-24.4";
 
   builder = ./builder.sh;
 
   src = fetchurl {
     url    = "mirror://gnu/emacs/${name}.tar.xz";
-    sha256 = "1385qzs3bsa52s5rcncbrkxlydkw0ajzrvfxgv8rws5fx512kakh";
+    sha256 = "1zflm6ac34s6v166p58ilxrxbxjm0q2wfc25f8y0mjml1lbr3qs7";
   };
+
+  patches = stdenv.lib.optionals stdenv.isDarwin [
+    ./darwin-new-sections.patch
+    ./at-fdcwd.patch
+  ];
 
   buildInputs =
     [ ncurses gconf libxml2 gnutls alsaLib pkgconfig texinfo ]
     ++ stdenv.lib.optional stdenv.isLinux dbus
     ++ stdenv.lib.optionals withX
       [ x11 libXaw Xaw3d libXpm libpng libjpeg libungif libtiff librsvg libXft
-        imagemagick gtk ]
-    ++ stdenv.lib.optional stdenv.isDarwin cairo;
+        imagemagick gtk gconf ]
+    ++ stdenv.lib.optional (stdenv.isDarwin && withX) cairo;
 
   configureFlags =
-    ( if withX then 
+    ( if withX && withGTK then
         [ "--with-x-toolkit=gtk" "--with-xft"]
+      else (if withX then
+        [ "--with-x-toolkit=lucid" "--with-xft" ]
       else
         [ "--with-x=no" "--with-xpm=no" "--with-jpeg=no" "--with-png=no"
-          "--with-gif=no" "--with-tiff=no" ] )
-    # On NixOS, help Emacs find `crt*.o'.
-    ++ stdenv.lib.optional (stdenv ? glibc)
-         [ "--with-crt-dir=${stdenv.glibc}/lib" ];
+          "--with-gif=no" "--with-tiff=no" ] ) );
 
   NIX_CFLAGS_COMPILE = stdenv.lib.optionalString (stdenv.isDarwin && withX)
     "-I${cairo}/include/cairo";

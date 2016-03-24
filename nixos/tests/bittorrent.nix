@@ -6,7 +6,7 @@
 # which only works if the first client successfully uses the UPnP-IGD
 # protocol to poke a hole in the NAT.
 
-{ pkgs, ... }:
+import ./make-test.nix ({ pkgs, ... }:
 
 let
 
@@ -16,23 +16,26 @@ let
   miniupnpdConf = nodes: pkgs.writeText "miniupnpd.conf"
     ''
       ext_ifname=eth1
-      listening_ip=${nodes.router.config.networking.interfaces.eth2.ipAddress}/24
+      listening_ip=${(pkgs.lib.head nodes.router.config.networking.interfaces.eth2.ip4).address}/24
       allow 1024-65535 192.168.2.0/24 1024-65535
     '';
 
 in
 
 {
+  name = "bittorrent";
 
   nodes =
     { tracker =
         { config, pkgs, ... }:
-        { environment.systemPackages = [ pkgs.transmission pkgs.bittorrent ];
+        { environment.systemPackages = [ pkgs.transmission pkgs.opentracker ];
 
           # We need Apache on the tracker to serve the torrents.
           services.httpd.enable = true;
           services.httpd.adminAddr = "foo@example.org";
           services.httpd.documentRoot = "/tmp";
+
+          networking.firewall.enable = false; # FIXME: figure out what ports we actually need
         };
 
       router =
@@ -40,8 +43,9 @@ in
         { environment.systemPackages = [ pkgs.miniupnpd ];
           virtualisation.vlans = [ 1 2 ];
           networking.nat.enable = true;
-          networking.nat.internalIPs = [ "192.168.2.0/24" ];
+          networking.nat.internalInterfaces = [ "eth2" ];
           networking.nat.externalInterface = "eth1";
+          networking.firewall.enable = false;
         };
 
       client1 =
@@ -49,12 +53,14 @@ in
         { environment.systemPackages = [ pkgs.transmission ];
           virtualisation.vlans = [ 2 ];
           networking.defaultGateway =
-            nodes.router.config.networking.interfaces.eth2.ipAddress;
+            (pkgs.lib.head nodes.router.config.networking.interfaces.eth2.ip4).address;
+          networking.firewall.enable = false;
         };
 
       client2 =
         { config, pkgs, ... }:
         { environment.systemPackages = [ pkgs.transmission ];
+          networking.firewall.enable = false;
         };
     };
 
@@ -66,8 +72,8 @@ in
       # Enable NAT on the router and start miniupnpd.
       $router->waitForUnit("nat");
       $router->succeed(
-          "iptables -t nat -N MINIUPNPD",
-          "iptables -t nat -A PREROUTING -i eth1 -j MINIUPNPD",
+          "iptables -w -t nat -N MINIUPNPD",
+          "iptables -w -t nat -A PREROUTING -i eth1 -j MINIUPNPD",
           "echo 1 > /proc/sys/net/ipv4/ip_forward",
           "miniupnpd -f ${miniupnpdConf nodes}"
       );
@@ -75,12 +81,12 @@ in
       # Create the torrent.
       $tracker->succeed("mkdir /tmp/data");
       $tracker->succeed("cp ${file} /tmp/data/test.tar.bz2");
-      $tracker->succeed("transmission-create /tmp/data/test.tar.bz2 -t http://tracker:6969/announce -o /tmp/test.torrent");
+      $tracker->succeed("transmission-create /tmp/data/test.tar.bz2 -p -t http://${(pkgs.lib.head nodes.tracker.config.networking.interfaces.eth1.ip4).address}:6969/announce -o /tmp/test.torrent");
       $tracker->succeed("chmod 644 /tmp/test.torrent");
 
       # Start the tracker.  !!! use a less crappy tracker
       $tracker->waitForUnit("network.target");
-      $tracker->succeed("bittorrent-tracker --port 6969 --dfile /tmp/dstate >&2 &");
+      $tracker->succeed("opentracker -p 6969 >&2 &");
       $tracker->waitForOpenPort(6969);
 
       # Start the initial seeder.
@@ -104,4 +110,4 @@ in
       $client2->succeed("cmp /tmp/test.tar.bz2 ${file}");
     '';
 
-}
+})

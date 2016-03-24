@@ -12,7 +12,10 @@ stdenv.mkDerivation rec {
   name = "sane-backends-${version}";
 
   src = fetchurl {
-    url = "https://alioth.debian.org/frs/download.php/file/3958/${name}.tar.gz";
+    urls = [
+      "http://pkgs.fedoraproject.org/repo/pkgs/sane-backends/sane-backends-1.0.24.tar.gz/1ca68e536cd7c1852322822f5f6ac3a4/${name}.tar.gz"
+      "https://alioth.debian.org/frs/download.php/file/3958/${name}.tar.gz"
+    ];
     curlOpts = "--insecure";
     sha256 = "0ba68m6bzni54axjk15i51rya7hfsdliwvqyan5msl7iaid0iir7";
   };
@@ -30,8 +33,8 @@ stdenv.mkDerivation rec {
   postInstall = ''
     if test "$udevSupport" = "1"; then
       mkdir -p $out/etc/udev/rules.d/
-      ./tools/sane-desc -m udev > $out/etc/udev/rules.d/60-libsane.rules || \
-      cp tools/udev/libsane.rules $out/etc/udev/rules.d/60-libsane.rules
+      ./tools/sane-desc -m udev > $out/etc/udev/rules.d/49-libsane.rules || \
+      cp tools/udev/libsane.rules $out/etc/udev/rules.d/49-libsane.rules
     fi
   '';
 
@@ -47,7 +50,7 @@ stdenv.mkDerivation rec {
   meta = {
     homepage = "http://www.sane-project.org/";
     description = "Scanner Access Now Easy";
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
 
     maintainers = [ stdenv.lib.maintainers.simons ];
     platforms = stdenv.lib.platforms.linux;

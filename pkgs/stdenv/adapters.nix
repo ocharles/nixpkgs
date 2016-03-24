@@ -2,27 +2,20 @@
    a new stdenv with different behaviour, e.g. using a different C
    compiler. */
 
-{dietlibc, fetchurl, runCommand}:
-
+pkgs:
 
 rec {
 
 
   # Override the compiler in stdenv for specific packages.
-  overrideGCC = stdenv: gcc: stdenv //
-    { mkDerivation = args: stdenv.mkDerivation (args // { NIX_GCC = gcc; });
-      inherit gcc;
-    };
+  overrideGCC = stdenv: gcc: stdenv.override { allowedRequisites = null; cc = gcc; };
 
 
   # Add some arbitrary packages to buildInputs for specific packages.
   # Used to override packages in stdenv like Make.  Should not be used
   # for other dependencies.
-  overrideInStdenv = stdenv: pkgs: stdenv //
-    { mkDerivation = args: stdenv.mkDerivation (args //
-        { buildInputs = args.buildInputs or [] ++ pkgs; }
-      );
-    };
+  overrideInStdenv = stdenv: pkgs:
+    stdenv.override (prev: { allowedRequisites = null; extraBuildInputs = prev.extraBuildInputs or [] ++ pkgs; });
 
 
   # Override the setup script of stdenv.  Useful for testing new
@@ -33,64 +26,7 @@ rec {
   #   randomPkg = import ../bla { ...
   #     stdenv = overrideSetup stdenv ../stdenv/generic/setup-latest.sh;
   #   };
-  overrideSetup = stdenv: setup: stdenv.regenerate setup;
-
-
-  # Return a modified stdenv that uses dietlibc to create small
-  # statically linked binaries.
-  useDietLibC = stdenv: stdenv //
-    { mkDerivation = args: stdenv.mkDerivation (args // {
-        NIX_CFLAGS_LINK = "-static";
-
-        # libcompat.a contains some commonly used functions.
-        NIX_LDFLAGS = "-lcompat";
-
-        # These are added *after* the command-line flags, so we'll
-        # always optimise for size.
-        NIX_CFLAGS_COMPILE =
-          args.NIX_CFLAGS_COMPILE or ""
-          + " -Os -s -D_BSD_SOURCE=1";
-
-        configureFlags =
-          args.configureFlags or ""
-          + " --disable-shared"; # brrr...
-
-        NIX_GCC = import ../build-support/gcc-wrapper {
-          inherit stdenv;
-          libc = dietlibc;
-          inherit (stdenv.gcc) gcc binutils nativeTools nativePrefix;
-          nativeLibc = false;
-        };
-      });
-      isDietLibC = true;
-    } // {inherit fetchurl;};
-
-
-  # Return a modified stdenv that uses klibc to create small
-  # statically linked binaries.
-  useKlibc = stdenv: klibc: stdenv //
-    { mkDerivation = args: stdenv.mkDerivation (args // {
-        NIX_CFLAGS_LINK = "-static";
-
-        # These are added *after* the command-line flags, so we'll
-        # always optimise for size.
-        NIX_CFLAGS_COMPILE =
-          args.NIX_CFLAGS_COMPILE or "" + " -Os -s";
-
-        configureFlags =
-          args.configureFlags or "" + " --disable-shared"; # brrr...
-
-        NIX_GCC = runCommand "klibc-wrapper" {} ''
-          mkdir -p $out/bin
-          ln -s ${klibc}/bin/klcc $out/bin/gcc
-          ln -s ${klibc}/bin/klcc $out/bin/cc
-          mkdir -p $out/nix-support
-          echo 'PATH=$PATH:${stdenv.gcc.binutils}/bin' > $out/nix-support/setup-hook
-        '';
-      });
-      isKlibc = true;
-      isStatic = true;
-    } // {inherit fetchurl;};
+  overrideSetup = stdenv: setupScript: stdenv.override { inherit setupScript; };
 
 
   # Return a modified stdenv that tries to build statically linked
@@ -103,7 +39,7 @@ rec {
           + " --disable-shared"; # brrr...
       });
       isStatic = true;
-    } // {inherit fetchurl;};
+    };
 
 
   # Return a modified stdenv that builds static libraries instead of
@@ -115,7 +51,7 @@ rec {
           toString args.configureFlags or ""
           + " --enable-static --disable-shared";
       });
-    } // {inherit fetchurl;};
+    };
 
 
   # Return a modified stdenv that adds a cross compiler to the
@@ -194,76 +130,13 @@ rec {
     { mkDerivation = args: stdenv.mkDerivation (args // extraAttrs); };
 
 
-  /* Return a modified stdenv that performs the build under $out/.build
-     instead of in $TMPDIR.  Thus, the sources are kept available.
-     This is useful for things like debugging or generation of
-     dynamic analysis reports. */
-  keepBuildTree = stdenv:
-    addAttrsToDerivation
-      { prePhases = "moveBuildDir";
-
-        moveBuildDir =
-          ''
-            mkdir -p $out/.build
-            cd $out/.build
-          '';
-      } stdenv;
-
-
-  cleanupBuildTree = stdenv:
-    addAttrsToDerivation
-      { postPhases = "cleanupBuildDir";
-
-        # Get rid of everything that isn't a gcno file or a C source
-        # file.  This also includes the gcda files; we're not
-        # interested in coverage resulting from the package's own test
-        # suite.  Also strip the `.tmp_' prefix from gcno files.  (The
-        # Linux kernel creates these.)
-        cleanupBuildDir =
-          ''
-            find $out/.build/ -type f -a ! \
-              \( -name "*.c" -o -name "*.h" -o -name "*.gcno" \) \
-              | xargs rm -f --
-
-            for i in $(find $out/.build/ -name ".tmp_*.gcno"); do
-                mv "$i" "$(echo $i | sed s/.tmp_//)"
-            done
-          '';
-      } stdenv;
-
-
   /* Return a modified stdenv that builds packages with GCC's coverage
      instrumentation.  The coverage note files (*.gcno) are stored in
      $out/.build, along with the source code of the package, to enable
      programs like lcov to produce pretty-printed reports.
   */
   addCoverageInstrumentation = stdenv:
-    addAttrsToDerivation
-      {
-        postUnpack =
-          ''
-            # This is an uberhack to prevent libtool from removing gcno
-            # files.  This has been fixed in libtool, but there are
-            # packages out there with old ltmain.sh scripts.
-            # See http://www.mail-archive.com/libtool@gnu.org/msg10725.html
-            for i in $(find -name ltmain.sh); do
-                substituteInPlace $i --replace '*.$objext)' '*.$objext | *.gcno)'
-            done
-
-            export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -O0 --coverage"
-          '';
-      }
-
-      # Object files instrumented with coverage analysis write
-      # runtime coverage data to <path>/<object>.gcda, where <path>
-      # is the location where gcc originally created the object
-      # file.  That would be /tmp/nix-build-<something>, which will
-      # be long gone by the time we run the program.  Furthermore,
-      # the <object>.gcno files created at compile time are also
-      # written there.  And to make nice coverage reports with lcov,
-      # we need the source code.  So we have to use the
-      # `keepBuildTree' adapter as well.
-      (cleanupBuildTree (keepBuildTree stdenv));
+    overrideInStdenv stdenv [ pkgs.enableGCOVInstrumentation pkgs.keepBuildTree ];
 
 
   /* Replace the meta.maintainers field of a derivation.  This is useful
@@ -277,7 +150,7 @@ rec {
   */
   replaceMaintainersField = stdenv: pkgs: maintainers: stdenv //
     { mkDerivation = args:
-        pkgs.lib.recursiveUpdate
+        stdenv.lib.recursiveUpdate
           (stdenv.mkDerivation args)
           { meta.maintainers = maintainers; };
     };
@@ -354,4 +227,17 @@ rec {
       });
     };
 
+
+  /* Modify a stdenv so that it uses the Gold linker. */
+  useGoldLinker = stdenv: stdenv //
+    { mkDerivation = args: stdenv.mkDerivation (args // {
+        NIX_CFLAGS_LINK = toString (args.NIX_CFLAGS_COMPILE or "") + " -fuse-ld=gold";
+      });
+    };
+
+  dropCxx = drv: drv.override {
+    stdenv = if pkgs.stdenv.isDarwin
+      then pkgs.allStdenvs.stdenvDarwinNaked
+      else pkgs.stdenv;
+  };
 }

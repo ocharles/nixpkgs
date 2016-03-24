@@ -71,9 +71,9 @@ in
 
       homepage = http://impressive.sourceforge.net/;
 
-      license = "GPLv2";
+      license = stdenv.lib.licenses.gpl2;
 
-      maintainers = [ stdenv.lib.maintainers.ludo ];
+      maintainers = [ ];
       platforms = stdenv.lib.platforms.mesaPlatforms;
     };
   }

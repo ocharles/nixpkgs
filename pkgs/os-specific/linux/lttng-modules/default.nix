@@ -1,15 +1,20 @@
 { stdenv, fetchurl, kernel }:
 
+assert stdenv.lib.versionAtLeast kernel.version "3.4";  # fails on 3.2
+assert builtins.substring 0 4 kernel.version != "3.12";
+
 stdenv.mkDerivation rec {
-  pname = "lttng-modules-2.3.0";
+  pname = "lttng-modules-${version}";
   name = "${pname}-${kernel.version}";
+  version = "2.6.0-rc1"; # "git describe bf2ba318fff"
 
   src = fetchurl {
-    url = "https://lttng.org/files/lttng-modules/${pname}.tar.bz2";
-    sha256 = "0l9fbmpsjvm5pbrc6axy8chdp21j4b8fm0hmjhpk658ll0iixmpb";
+    url = "https://github.com/lttng/lttng-modules/archive/v${version}.tar.gz";
+    sha256 = "01gha02ybbzr86v6s6bqn649jiw5k89kb363b9s1iv8igrdlzhl1";
   };
 
-  patches = [ ./lttng-fix-build-error-on-linux-3.2.patch ];
+  # from upstream ML, should be in the next release
+  patches = [ ./build-fix.patch ./6f0af2643c40b57280796eaa4fe60ce4f678b6dc.patch ];
 
   preConfigure = ''
     export KERNELDIR="${kernel.dev}/lib/modules/${kernel.modDirVersion}/build"
@@ -23,9 +28,7 @@ stdenv.mkDerivation rec {
   meta = with stdenv.lib; {
     description = "Linux kernel modules for LTTng tracing";
     homepage = http://lttng.org/;
-    # TODO: Add "mit" to the license list once the license attr set vs string
-    # decision has been made. (Having "mit" there breaks hydra evaluation.)
-    license = with licenses; [ lgpl21 gpl2 ];
+    license = with licenses; [ lgpl21 gpl2 mit ];
     platforms = platforms.linux;
     maintainers = [ maintainers.bjornfor ];
   };

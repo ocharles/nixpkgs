@@ -1,6 +1,6 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 let
 
@@ -84,7 +84,7 @@ in
         startOn = "started network-interfaces";
         stopOn = "stopping network-interfaces";
 
-        path = [ pkgs.nfsUtils pkgs.sshfsFuse ];
+        path = [ pkgs.nfs-utils pkgs.sshfsFuse ];
 
         preStop =
           ''

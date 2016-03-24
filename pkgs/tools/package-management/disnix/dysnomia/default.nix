@@ -9,6 +9,7 @@
 , enableTomcatWebApplication ? false
 , enableMongoDatabase ? false
 , catalinaBaseDir ? "/var/tomcat"
+, getopt
 }:
 
 assert enableMySQLDatabase -> mysql != null;
@@ -18,10 +19,10 @@ assert enableEjabberdDump -> ejabberd != null;
 assert enableMongoDatabase -> mongodb != null;
 
 stdenv.mkDerivation {
-  name = "dysnomia-0.3pred677260f77bb202c7490f7db08dbd8442c9db484";
+  name = "dysnomia-0.3preccaebdfad11bc34850b24f1c2cb5ee6c8f0b7fe2";
   src = fetchurl {
-    url = http://hydra.nixos.org/build/6763096/download/1/dysnomia-0.3pred677260f77bb202c7490f7db08dbd8442c9db484.tar.gz;
-    sha256 = "0k7qpqa9inzxjdryd7zfzxid8k1icsxxw995chzw4wrlgxns16xy";
+    url = http://hydra.nixos.org/build/14156365/download/1/dysnomia-0.3preccaebdfad11bc34850b24f1c2cb5ee6c8f0b7fe2.tar.gz;
+    sha256 = "0l88vcpnicw86cn6jwrgmg3fs6i3sw3qc9r6lycfkjf5qrnzd1yi";
   };
   
   preConfigure = if enableEjabberdDump then "export PATH=$PATH:${ejabberd}/sbin" else "";
@@ -37,7 +38,7 @@ stdenv.mkDerivation {
      ${if enableMongoDatabase then "--with-mongodb" else "--without-mongodb"}
    '';
   
-  buildInputs = []
+  buildInputs = [ getopt ]
     ++ stdenv.lib.optional enableEjabberdDump ejabberd
     ++ stdenv.lib.optional enableMySQLDatabase mysql
     ++ stdenv.lib.optional enablePostgreSQLDatabase postgresql
@@ -46,7 +47,7 @@ stdenv.mkDerivation {
 
   meta = {
     description = "Automated deployment of mutable components and services for Disnix";
-    license = "MIT";
+    license = stdenv.lib.licenses.mit;
     maintainers = [ stdenv.lib.maintainers.sander ];
   };
 }

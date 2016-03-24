@@ -1,6 +1,6 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 let
 
@@ -55,7 +55,7 @@ in
       };
 
       package = mkOption {
-        type = types.path;
+        type = types.package;
         example = literalExample "pkgs.postgresql92";
         description = ''
           PostgreSQL package to use.
@@ -85,7 +85,7 @@ in
           Defines how users authenticate themselves to the server. By
           default, "trust" access to local users will always be granted
           along with any other custom options. If you do not want this,
-          set this option using "pkgs.lib.mkForce" to override this
+          set this option using "lib.mkForce" to override this
           behaviour.
         '';
       };
@@ -215,7 +215,7 @@ in
             # Shut down Postgres using SIGINT ("Fast Shutdown mode").  See
             # http://www.postgresql.org/docs/current/static/server-shutdown.html
             KillSignal = "SIGINT";
-            KillMode = "process"; # FIXME: this may cause processes to be left behind in the cgroup even after the final SIGKILL
+            KillMode = "mixed";
 
             # Give Postgres a decent amount of time to clean up after
             # receiving systemd's SIGINT.
@@ -225,14 +225,14 @@ in
         # Wait for PostgreSQL to be ready to accept connections.
         postStart =
           ''
-            while ! psql postgres -c "" 2> /dev/null; do
+            while ! psql --port=${toString cfg.port} postgres -c "" 2> /dev/null; do
                 if ! kill -0 "$MAINPID"; then exit 1; fi
                 sleep 0.1
             done
 
             if test -e "${cfg.dataDir}/.first_startup"; then
               ${optionalString (cfg.initialScript != null) ''
-                cat "${cfg.initialScript}" | psql postgres
+                cat "${cfg.initialScript}" | psql --port=${toString cfg.port} postgres
               ''}
               rm -f "${cfg.dataDir}/.first_startup"
             fi

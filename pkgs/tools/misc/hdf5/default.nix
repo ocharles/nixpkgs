@@ -1,14 +1,36 @@
 
 { stdenv
 , fetchurl
+, zlib ? null
+, szip ? null
+, mpi ? null
+, enableShared ? true
 }:
-stdenv.mkDerivation {
-  name = "hdf5-1.8.10-patch1";
+stdenv.mkDerivation rec {
+  version = "1.8.14";
+  name = "hdf5-${version}";
   src = fetchurl {
-    url = http://www.hdfgroup.org/ftp/HDF5/current/src/hdf5-1.8.10-patch1.tar.gz;
-    sha256 = "08ad32fhnci6rdfn6mn3w9v1wcaxdcd326n3ljwkcq4dzhkh28qz";  			
+    url = "http://www.hdfgroup.org/ftp/HDF5/releases/hdf5-${version}/src/hdf5-${version}.tar.gz";
+    sha256 = "0f86gv32pjrrphvamgims1dd7f3bp46hjarbcdy8k4gmyzpgxghx";
+ };
+
+  passthru = {
+    mpiSupport = (mpi != null);
+    inherit mpi;
   };
-  buildInputs = [] ;
+
+  buildInputs = []
+    ++ stdenv.lib.optional (zlib != null) zlib
+    ++ stdenv.lib.optional (szip != null) szip;
+
+  propagatedBuildInputs = []
+    ++ stdenv.lib.optional (mpi != null) mpi;
+
+  configureFlags = "
+    ${if szip != null then "--with-szlib=${szip}" else ""}
+    ${if mpi != null then "--enable-parallel" else ""}
+    ${if enableShared then "--enable-shared" else ""}
+  ";
   
   patches = [./bin-mv.patch];
   

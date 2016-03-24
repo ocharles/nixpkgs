@@ -1,52 +1,41 @@
-{ stdenv, fetchsvn, cmake, libunwind }:
+{ lib, stdenv, fetchurl, cmake, libcxxabi, fixDarwinDylibNames }:
 
-let rev = "190100"; in
+let version = "3.4.2"; in
 
 stdenv.mkDerivation rec {
-  name = "libc++-pre${rev}";
+  name = "libc++-${version}";
 
-  src = fetchsvn {
-    url = "http://llvm.org/svn/llvm-project/libcxx/trunk";
-    inherit rev;
-    sha256 = "0hnfvzzrkj797kp9sk2yncvbmiyx0d72k8bys3z7l6i47d37xv03";
+  src = fetchurl {
+    url = "http://llvm.org/releases/${version}/libcxx-${version}.src.tar.gz";
+    sha256 = "0z3jdvgcq995khkpis5c5vaxhbmvbqjlalbhn09k6pgb5zp46rc2";
   };
 
-  cxxabi = fetchsvn {
-    url = "http://llvm.org/svn/llvm-project/libcxxabi/trunk";
-    inherit rev;
-    sha256 = "1kdyvngwd229cgmcqpawaf0qizas8bqc0g8s08fmbgwsrh1qrryp";
-  };
+  patches = [ ./darwin.patch ];
 
-  buildInputs = [ cmake ];
+  buildInputs = [ cmake libcxxabi ] ++ lib.optional stdenv.isDarwin fixDarwinDylibNames;
 
-  preConfigure = ''
-      sed -i 's/;cxa_demangle.h//' CMakeLists.txt
-      cp -R ${cxxabi} cxxabi
-      chmod u+w -R cxxabi # umm
-      (export NIX_CFLAGS_COMPILE="-I${libunwind}/include -I$PWD/include";
-       export NIX_CFLAGS_LINK="-L${libunwind}/lib -lunwind";
-       cd cxxabi/lib
-       sed -e s,-lstdc++,, -i buildit # do not link to libstdc++!
-       ./buildit
-       mkdir -p $out/lib && cp libc++abi.so.1.0 $out/lib
-       cd $out/lib
-       ln -s libc++abi.so.1.0 libc++abi.so
-       ln -s libc++abi.so.1.0 libc++abi.so.1)
-  '';
-
-  cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Release"
-                 "-DLIBCXX_LIBCXXABI_INCLUDE_PATHS=${cxxabi}/include"
-                 "-DLIBCXX_CXX_ABI=libcxxabi" ];
-  buildPhase = ''NIX_CFLAGS_LINK="-L$out/lib -lc++abi" make'';
+  cmakeFlags =
+    [ "-DCMAKE_BUILD_TYPE=Release"
+      "-DLIBCXX_LIBCXXABI_INCLUDE_PATHS=${libcxxabi}/include"
+      "-DLIBCXX_LIBCXXABI_LIB_PATH=${libcxxabi}/lib"
+      "-DLIBCXX_LIBCPPABI_VERSION=2"
+      "-DLIBCXX_CXX_ABI=libcxxabi"
+    ];
 
   enableParallelBuilding = true;
+
+  inherit libcxxabi;
+
+  # Remove a Makefile that causes many retained dependencies.
+  postInstall = "rm $out/include/c++/v1/Makefile";
+
+  setupHook = ./setup-hook.sh;
 
   meta = {
     homepage = http://libcxx.llvm.org/;
     description = "A new implementation of the C++ standard library, targeting C++11";
     license = "BSD";
-    maintainers = stdenv.lib.maintainers.shlevy;
-    platforms = stdenv.lib.platforms.all;
+    maintainers = [ stdenv.lib.maintainers.shlevy ];
+    platforms = stdenv.lib.platforms.unix;
   };
 }
-

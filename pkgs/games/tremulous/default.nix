@@ -28,8 +28,8 @@ stdenv.mkDerivation rec {
   patches = [ ./parse.patch ];
   patchFlags = "-p 0";
   NIX_LD_FLAGS = ''
-    -rpath ${stdenv.gcc}/lib
-    -rpath ${stdenv.gcc}/lib64
+    -rpath ${stdenv.cc}/lib
+    -rpath ${stdenv.cc}/lib64
   '';
   buildPhase = ''
     cd Release_1.011
@@ -73,5 +73,6 @@ stdenv.mkDerivation rec {
     license = [ "GPLv2" ];  # media under cc by-sa 2.5
     maintainers = with stdenv.lib.maintainers; [ astsmtl ];
     platforms = with stdenv.lib.platforms; linux;
+    broken = true;
   };
 }

@@ -1,9 +1,11 @@
 args: with args;
 rec {
-  name = "texlive-extra-2013";
+  name    = "texlive-extra-2014";
+  version = "2014.20141024";
+
   src = fetchurl {
-    url = mirror://debian/pool/main/t/texlive-extra/texlive-extra_2013.20131219.orig.tar.xz;
-    sha256 = "09iijzq0y5kq16f3lv2jrln190ldbbzywpwr33hrmnw5yp3izmrh";
+    url = "mirror://debian/pool/main/t/texlive-extra/texlive-extra_${version}.orig.tar.xz";
+    sha256 = "190p5v6madcgkxjmfal0pcylfz88zi6yaixky0vrcz1kbvxqlcb9";
   };
 
   buildInputs = [texLive xz];
@@ -16,9 +18,9 @@ rec {
 
   meta = {
     description = "Extra components for TeXLive";
-    maintainers = [ args.lib.maintainers.raskin ];
+    maintainers = [ args.lib.maintainers.raskin args.lib.maintainers.jwiegley ];
 
-    # Actually, arch-independent.. 
+    # Actually, arch-independent..
     hydraPlatforms = [];
   };
 }

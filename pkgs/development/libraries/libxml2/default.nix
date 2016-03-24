@@ -1,15 +1,19 @@
-{ stdenv, fetchurl, zlib, xz, python ? null, pythonSupport ? true }:
+{ stdenv, fetchurl, zlib, xz, python ? null, pythonSupport ? true, findXMLCatalogs }:
 
 assert pythonSupport -> python != null;
 
 #TODO: share most stuff between python and non-python builds, perhaps via multiple-output
 
+let
+  version = "2.9.2";
+in
+
 stdenv.mkDerivation (rec {
-  name = "libxml2-2.9.1";
+  name = "libxml2-${version}";
 
   src = fetchurl {
     url = "ftp://xmlsoft.org/libxml2/${name}.tar.gz";
-    sha256 = "1nqgd1qqmg0cg09mch78m2ac9klj9n87blilx4kymi7jcv5n8g7x";
+    sha256 = "1g6mf03xcabmk5ing1lwqmasr803616gb2xhn7pll10x2l5w6y2i";
   };
 
   buildInputs = stdenv.lib.optional pythonSupport python
@@ -18,11 +22,9 @@ stdenv.mkDerivation (rec {
     # RUNPATH for that, leading to undefined references for its users.
     ++ (stdenv.lib.optional stdenv.isFreeBSD xz);
 
-  propagatedBuildInputs = [ zlib ];
+  propagatedBuildInputs = [ zlib findXMLCatalogs ];
 
-  setupHook = ./setup-hook.sh;
-
-  passthru = { inherit pythonSupport; };
+  passthru = { inherit pythonSupport version; };
 
   enableParallelBuilding = true;
 
@@ -41,7 +43,7 @@ stdenv.mkDerivation (rec {
   preInstall = ''substituteInPlace python/libxml2mod.la --replace "${python}" "$out"'';
   installFlags = ''pythondir="$(out)/lib/${python.libPrefix}/site-packages"'';
 
-} // stdenv.lib.optionalAttrs (!pythonSupport && stdenv.isFreeBSD) {
+} // stdenv.lib.optionalAttrs (!pythonSupport) {
   configureFlags = "--with-python=no"; # otherwise build impurity bites us
 })
 

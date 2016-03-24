@@ -1,8 +1,8 @@
 # Module for MiniDLNA, a simple DLNA server.
 
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 let
 
@@ -79,7 +79,7 @@ in
       { description = "MiniDLNA Server";
 
         wantedBy = [ "multi-user.target" ];
-        after = [ "network.target" ];
+        after = [ "network.target" "local-fs.target" ];
 
         preStart =
           ''

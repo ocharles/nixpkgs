@@ -12,12 +12,12 @@ assert ldapSupport -> aprutil.ldapSupport && openldap != null;
 assert mpm == "prefork" || mpm == "worker" || mpm == "event";
 
 stdenv.mkDerivation rec {
-  version = "2.2.26";
+  version = "2.2.29";
   name = "apache-httpd-${version}";
 
   src = fetchurl {
     url = "mirror://apache/httpd/httpd-${version}.tar.bz2";
-    sha256 = "1dj29cl2bsk8ir8hxw0ajhbpbrrmsh8mwqfc1ipiqgv7slyqx45g";
+    sha1 = "1d6a8fbc1391d358cc6fe430edc16222b97258d5";
   };
 
   buildInputs = [perl apr aprutil pcre] ++
@@ -40,6 +40,10 @@ stdenv.mkDerivation rec {
     ${if sslSupport then "--enable-ssl --with-ssl=${openssl}" else ""}
     ${if ldapSupport then "--enable-ldap --enable-authnz-ldap" else ""}
     --with-mpm=${mpm}
+    --enable-cache
+    --enable-disk-cache
+    --enable-file-cache
+    --enable-mem-cache
   '';
 
   enableParallelBuilding = true;
@@ -55,9 +59,10 @@ stdenv.mkDerivation rec {
 
   meta = {
     description = "Apache HTTPD, the world's most popular web server";
+    branch      = "2.2";
     homepage    = http://httpd.apache.org/;
     license     = stdenv.lib.licenses.asl20;
     platforms   = stdenv.lib.platforms.linux ++ stdenv.lib.platforms.darwin;
-    maintainers = with stdenv.lib.maintainers; [ simons lovek323 ];
+    maintainers = with stdenv.lib.maintainers; [ eelco simons lovek323 ];
   };
 }

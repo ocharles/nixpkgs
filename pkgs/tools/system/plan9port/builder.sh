@@ -2,48 +2,22 @@ source $stdenv/setup
 
 tar xvfz $src
 
-cd plan9
+cd plan9port
 
-export PLAN9=`pwd`
-export X11=/tmp
+echo CFLAGS=\"-I${fontconfig}/include -I${libXt}/include\" > LOCAL.config
+echo X11=\"${libXt}/include\" >> LOCAL.config
 
-# Patch for the installation
-sed -i -e 's@`which echo`@echo@' lib/moveplan9.sh
+for p in $patches; do
+  echo "applying patch $p"
+  patch -p1 < $p
+done
 
-OLDPATH=$PATH
-PATH=`pwd`/bin:$PATH
-
-gcc lib/linux-isnptl.c -lpthread
-set +e 
-if ./a.out > /dev/null
-then
-  echo "SYSVERSION=2.6.x" >config
-else
-  echo "SYSVERSION=2.4.x" >config
-fi
-rm -f ./a.out
-set -e
-
-pushd src
-
-# Build mk
-../dist/buildmk 2>&1 | sed 's/^[+] //'
-
-# Build everything
-
-mk clean
-mk libs-nuke
-mk all || exit 1
-mk install || exit 1
-
-popd
-
-# Installation
-export PLAN9=$out
+export PLAN9=$out/plan9
 mkdir -p $PLAN9
-GLOBIGNORE='src:.*'
-cp -R * $PLAN9
-GLOBIGNORE=
 
-cd $PLAN9
-sh lib/moveplan9.sh `pwd`
+for f in `grep -l -r /usr/local/plan9`; do
+  sed "s,/usr/local/plan9,${PLAN9},g" -i $f
+done
+
+./INSTALL -r $PLAN9
+cp -R * $PLAN9

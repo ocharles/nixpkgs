@@ -1,10 +1,11 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 let
 
   dmcfg = config.services.xserver.displayManager;
+
   cfg = dmcfg.slim;
 
   slimConfig = pkgs.writeText "slim.cfg"
@@ -18,6 +19,7 @@ let
       reboot_cmd ${config.systemd.package}/sbin/shutdown -r now
       ${optionalString (cfg.defaultUser != null) ("default_user " + cfg.defaultUser)}
       ${optionalString cfg.autoLogin "auto_login yes"}
+      ${cfg.extraConfig}
     '';
 
   # Unpack the SLiM theme, or use the default.
@@ -26,7 +28,7 @@ let
       unpackedTheme = pkgs.stdenv.mkDerivation {
         name = "slim-theme";
         buildCommand = ''
-          ensureDir $out
+          mkdir -p $out
           cd $out
           unpackFile ${cfg.theme}
           ln -s * default
@@ -57,7 +59,7 @@ in
         default = null;
         example = literalExample ''
           pkgs.fetchurl {
-            url = http://download.berlios.de/slim/slim-wave.tar.gz;
+            url = "mirror://sourceforge/slim.berlios/slim-wave.tar.gz";
             sha256 = "0ndr419i5myzcylvxb89m9grl2xyq6fbnyc3lkd711mzlmnnfxdy";
           }
         '';
@@ -65,7 +67,7 @@ in
           The theme for the SLiM login manager.  If not specified, SLiM's
           default theme is used.  See <link
           xlink:href='http://slim.berlios.de/themes01.php'/> for a
-          collection of themes.
+          collection of themes. TODO: berlios shut down.
         '';
       };
 
@@ -85,6 +87,15 @@ in
         default = false;
         description = ''
           Automatically log in as the default user.
+        '';
+      };
+
+      extraConfig = mkOption {
+        type = types.lines;
+        default = "";
+        description = ''
+          Extra configuration options for SLiM login manager. Do not
+          add options that can be configured directly.
         '';
       };
 
@@ -108,6 +119,12 @@ in
           };
         execCmd = "exec ${pkgs.slim}/bin/slim";
       };
+
+    services.xserver.displayManager.sessionCommands =
+      ''
+        # Export the config/themes for slimlock.
+        export SLIM_THEMESDIR=${slimThemesDir}
+      '';
 
     # Allow null passwords so that the user can login as root on the
     # installation CD.

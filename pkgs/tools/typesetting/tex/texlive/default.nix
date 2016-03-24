@@ -1,18 +1,20 @@
 args : with args;
 rec {
   src = fetchurl {
-    url = mirror://debian/pool/main/t/texlive-bin/texlive-bin_2013.20130729.30972.orig.tar.xz;
-    sha256 = "1idgyim6r4bi3id245k616qrdarfh65xv3gi2psarqqmsw504yhd";
+    url = mirror://debian/pool/main/t/texlive-bin/texlive-bin_2014.20140926.35254.orig.tar.xz;
+    sha256 = "1c39x059jhn5jsy6i9j3akjbkm1kmmzssy1jyi1aw20rl2vp86w3";
   };
 
+  texmfVersion = "2014.20141024";
   texmfSrc = fetchurl {
-    url = mirror://debian/pool/main/t/texlive-base/texlive-base_2013.20131219.orig.tar.xz;
-    sha256 = "1kcfw6n9rv3wznyqkvkad60p1zljbn1cw2jhajzcrn8m39y0ad3x";
+    url = "mirror://debian/pool/main/t/texlive-base/texlive-base_${texmfVersion}.orig.tar.xz";
+    sha256 = "1a6968myfi81s76n9p1qljgpwia9mi55pkkz1q6lbnwybf97akj1";
   };
 
+  langTexmfVersion = "2014.20141024";
   langTexmfSrc = fetchurl {
-    url = mirror://debian/pool/main/t/texlive-lang/texlive-lang_2013.20131219.orig.tar.xz;
-    sha256 = "139hb91ks62q56dnnrzhcxmm2wpz0b40ka7smaqgw86r002albb0";
+    url = "mirror://debian/pool/main/t/texlive-lang/texlive-lang_${langTexmfVersion}.orig.tar.xz";
+    sha256 = "1ydz5m1v40n34g1l31r3vqg74rbr01x2f80drhz4igh21fm7zzpa";
   };
 
   passthru = { inherit texmfSrc langTexmfSrc; };
@@ -31,6 +33,9 @@ rec {
 
     sed -e s@/usr/bin/@@g -i $(grep /usr/bin/ -rl . )
 
+    sed -e 's@dehypht-x-2013-05-26@dehypht-x-2014-05-21@' -i $(grep 'dehypht-x' -rl $out )
+    sed -e 's@dehyphn-x-2013-05-26@dehyphn-x-2014-05-21@' -i $(grep 'dehyphn-x' -rl $out )
+
     sed -e 's@\<env ruby@${ruby}/bin/ruby@' -i $(grep 'env ruby' -rl . )
     sed -e 's@\<env perl@${perl}/bin/perl@' -i $(grep 'env perl' -rl . )
     sed -e 's@\<env python@${python}/bin/python@' -i $(grep 'env python' -rl . )
@@ -38,12 +43,12 @@ rec {
     sed -e '/ubidi_open/i#include <unicode/urename.h>' -i $(find . -name configure)
     sed -e 's/-lttf/-lfreetype/' -i $(find . -name configure)
 
-    sed -e s@ncurses/curses.h@curses.h@g -i $(grep ncurses/curses.h -rl . )
+    # sed -e s@ncurses/curses.h@curses.h@g -i $(grep ncurses/curses.h -rl . )
     sed -e '1i\#include <string.h>\n\#include <stdlib.h>' -i $( find libs/teckit -name '*.cpp' -o -name '*.c' )
 
     NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -I${icu}/include/layout";
 
-    ./Build --prefix="$out" --datadir="$out/share" --mandir "$out/share/man" --infodir "$out/share/info" \
+    ./Build --prefix="$out" --datadir="$out/share" --mandir="$out/share/man" --infodir="$out/share/info" \
       ${args.lib.concatStringsSep " " configureFlags}
     cd Work
   '' ) [ "minInit" "doUnpack" "addInputs" "defEnsureDir" ];
@@ -109,29 +114,38 @@ rec {
   buildInputs = [ zlib bzip2 ncurses libpng flex bison libX11 libICE xproto
     freetype t1lib gd libXaw icu ghostscript ed libXt libXpm libXmu libXext
     xextproto perl libSM ruby expat curl libjpeg python fontconfig xz pkgconfig
-    poppler graphite2 lesstif zziplib harfbuzz texinfo ]
-    ++ stdenv.lib.optionals stdenv.isDarwin [ makeWrapper ];
+    poppler libpaper graphite2 lesstif zziplib harfbuzz texinfo potrace gmp mpfr
+    xpdf ]
+    ++ stdenv.lib.optionals stdenv.isDarwin [ makeWrapper ]
+    ;
 
   configureFlags = [ "--with-x11" "--enable-ipc" "--with-mktexfmt"
     "--enable-shared" "--disable-native-texlive-build" "--with-system-zziplib"
     "--with-system-libgs" "--with-system-t1lib" "--with-system-freetype2"
-    "--with-system-freetype=no" "--disable-ttf2pk" "--enable-ttf2pk2"
-    ]
-    ++ ( if stdenv.isDarwin
-         # ironically, couldn't get xetex compiling on darwin
-         then [ "--disable-xetex" "--disable-xdv2pdf" "--disable-xdvipdfmx" ]
-         # couldn't seem to get system icu working on darwin
-         else [ "--with-system-icu" ] );
+    "--with-system-freetype=no" "--disable-ttf2pk" "--enable-ttf2pk2" ]
+    ++ stdenv.lib.optionals stdenv.isDarwin [
+      # TODO: We should be able to fix these tests
+      "--disable-devnag"
+
+      # jww (2014-06-02): The following fails with:
+      # FAIL: tests/dvisvgm
+      # ===================
+      #
+      # dyld: Library not loaded: libgs.dylib.9.06
+      #   Referenced from: .../Work/texk/dvisvgm/.libs/dvisvgm
+      #   Reason: image not found
+      "--disable-dvisvgm"
+    ];
 
   phaseNames = [ "addInputs" "doMainBuild" "doMakeInstall" "doPostInstall" ];
 
-  name = "texlive-core-2013";
+  name = "texlive-core-2014";
 
   meta = with stdenv.lib; {
     description = "A TeX distribution";
     homepage    = http://www.tug.org/texlive;
     license     = stdenv.lib.licenses.gpl2;
-    maintainers = with maintainers; [ lovek323 raskin ];
+    maintainers = with maintainers; [ lovek323 raskin jwiegley ];
     platforms   = platforms.unix;
   };
 }

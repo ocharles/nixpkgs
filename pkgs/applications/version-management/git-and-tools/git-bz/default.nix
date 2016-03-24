@@ -21,8 +21,8 @@ stdenv.mkDerivation {
   '';
 
   installPhase = ''
-    ensureDir $out
-    ensureDir $out/bin
+    mkdir -p $out
+    mkdir -p $out/bin
     cp git-bz $out/bin
     wrapProgram $out/bin/git-bz \
       --prefix PYTHONPATH : "$(toPythonPath $python):$(toPythonPath $pysqlite)"
@@ -37,7 +37,7 @@ stdenv.mkDerivation {
       git-bz is a tool for integrating the Git command line with the
       Bugzilla bug-tracking system. Operations such as attaching patches to
       bugs, applying patches in bugs to your current tree, and closing bugs
-      once you've pushed the fixes publically can be done completely from
+      once you've pushed the fixes publicly can be done completely from
       the command line without having to go to your web browser.
 
       Authentication for git-bz is done by reading the cookies for the
@@ -49,5 +49,6 @@ stdenv.mkDerivation {
 
     platforms = stdenv.lib.platforms.linux;
     maintainers = [ stdenv.lib.maintainers.pierron ];
+    broken = true;
   };
 }

@@ -2,11 +2,11 @@
 
 stdenv.mkDerivation rec {
   name = "sratom-${version}";
-  version = "0.4.2";
+  version = "0.4.6";
 
   src = fetchurl {
     url = "http://download.drobilla.net/${name}.tar.bz2";
-    sha256 = "16i5snknl9frz638mgr58lp11ap1xmkbrkb3l6f0ad8ddqpcjm3i";
+    sha256 = "080jjiyxjnj7hf25844hd9rb01grvzz1rk8mxcdnakywmspbxfd4";
   };
 
   buildInputs = [ lv2 pkgconfig python serd sord ];
@@ -22,6 +22,6 @@ stdenv.mkDerivation rec {
     description = "A library for serialising LV2 atoms to/from RDF";
     license = licenses.mit;
     maintainers = [ maintainers.goibhniu ];
-
+    platforms = platforms.linux;
   };
 }

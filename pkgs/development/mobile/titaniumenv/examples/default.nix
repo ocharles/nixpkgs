@@ -1,38 +1,44 @@
 { nixpkgs ? <nixpkgs>
 , systems ? [ "x86_64-linux" "x86_64-darwin" ]
-, xcodeVersion ? "5.0"
+, xcodeVersion ? "6.0.1"
+, xcodeBaseDir ? "/Applications/Xcode.app"
+, tiVersion ? "3.4.0.GA"
 , rename ? false
-, newBundleId ? "com.example.kitchensink", iosMobileProvisioningProfile ? null, iosCertificate ? null, iosCertificateName ? "Example", iosCertificatePassword ? ""
+, newBundleId ? "com.example.kitchensink", iosMobileProvisioningProfile ? null, iosCertificate ? null, iosCertificateName ? "Example", iosCertificatePassword ? "", iosVersion ? "8.0", iosWwdrCertificate ? null
+, allowUnfree ? false
+, enableWirelessDistribution ? false, installURL ? null
 }:
 
 let
-  pkgs = import nixpkgs {};
+  pkgs = import nixpkgs { config.allowUnfree = allowUnfree; };
 in
 rec {
   kitchensink_android_debug = pkgs.lib.genAttrs systems (system:
   let
-    pkgs = import nixpkgs { inherit system; };
+    pkgs = import nixpkgs { inherit system; config.allowUnfree = allowUnfree; };
   in
   import ./kitchensink {
     inherit (pkgs) fetchgit;
-    titaniumenv = pkgs.titaniumenv.override { inherit xcodeVersion; };
+    titaniumenv = pkgs.titaniumenv.override { inherit xcodeVersion xcodeBaseDir tiVersion; };
+    inherit tiVersion;
     target = "android";
   });
   
   kitchensink_android_release = pkgs.lib.genAttrs systems (system:
   let
-    pkgs = import nixpkgs { inherit system; };
+    pkgs = import nixpkgs { inherit system; config.allowUnfree = allowUnfree; };
   in
   import ./kitchensink {
     inherit (pkgs) fetchgit;
-    titaniumenv = pkgs.titaniumenv.override { inherit xcodeVersion; };
+    titaniumenv = pkgs.titaniumenv.override { inherit xcodeVersion xcodeBaseDir tiVersion; };
+    inherit tiVersion;
     target = "android";
     release = true;
   });
   
   emulate_kitchensink_debug = pkgs.lib.genAttrs systems (system:
   let
-    pkgs = import nixpkgs { inherit system; };
+    pkgs = import nixpkgs { inherit system; config.allowUnfree = allowUnfree; };
   in
   import ./emulate-kitchensink {
     inherit (pkgs) androidenv;
@@ -41,7 +47,7 @@ rec {
   
   emulate_kitchensink_release = pkgs.lib.genAttrs systems (system:
   let
-    pkgs = import nixpkgs { inherit system; };
+    pkgs = import nixpkgs { inherit system; config.allowUnfree = allowUnfree; };
   in
   import ./emulate-kitchensink {
     inherit (pkgs) androidenv;
@@ -55,35 +61,31 @@ rec {
   rec {
   kitchensink_ios_development = import ./kitchensink {
     inherit (pkgs) fetchgit;
-    titaniumenv = pkgs.titaniumenv.override { inherit xcodeVersion; };
+    titaniumenv = pkgs.titaniumenv.override { inherit xcodeVersion xcodeBaseDir tiVersion; };
+    inherit tiVersion iosVersion;
     target = "iphone";
   };
 
-  simulate_kitchensink_iphone = import ./simulate-kitchensink {
+  simulate_kitchensink = import ./simulate-kitchensink {
     inherit (pkgs) stdenv;
-    xcodeenv = pkgs.xcodeenv.override { version = xcodeVersion; };
+    xcodeenv = pkgs.xcodeenv.override { version = xcodeVersion; inherit xcodeBaseDir; };
     kitchensink = kitchensink_ios_development;
-    device = "iPhone";
-  };
-  
-  simulate_kitchensink_ipad = import ./simulate-kitchensink {
-    inherit (pkgs) stdenv;
-    xcodeenv = pkgs.xcodeenv.override { version = xcodeVersion; };
-    kitchensink = kitchensink_ios_development;
-    device = "iPad";
+    bundleId = if rename then newBundleId else "com.appcelerator.kitchensink";
   };
 } else {}) // (if rename then
   let
-    pkgs = import nixpkgs { system = "x86_64-darwin"; };
+    pkgs = import nixpkgs { system = "x86_64-darwin"; config.allowUnfree = allowUnfree; };
   in
   {
     kitchensink_ipa = import ./kitchensink {
       inherit (pkgs) stdenv fetchgit;
-      titaniumenv = pkgs.titaniumenv.override { inherit xcodeVersion; };
+      titaniumenv = pkgs.titaniumenv.override { inherit xcodeVersion xcodeBaseDir tiVersion; };
       target = "iphone";
+      inherit tiVersion;
       release = true;
       rename = true;
-      inherit newBundleId iosMobileProvisioningProfile iosCertificate iosCertificateName iosCertificatePassword;
+      inherit newBundleId iosMobileProvisioningProfile iosCertificate iosCertificateName iosCertificatePassword iosVersion iosWwdrCertificate;
+      inherit enableWirelessDistribution installURL;
     };
   }
   

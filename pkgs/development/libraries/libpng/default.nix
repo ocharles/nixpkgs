@@ -3,11 +3,11 @@
 assert zlib != null;
 
 let
-  version = "1.6.8";
-  sha256 = "109h2fcjspd792lvh5q4xnkpsv7rjczmrdl15i4ajx0xbs5kvxr4";
+  version = "1.6.16";
+  sha256 = "0q5ygy15jkpqbj5701ywrjzqp4nl5yz3r4g58h2p0kiycggm9xs2";
   patch_src = fetchurl {
     url = "mirror://sourceforge/libpng-apng/libpng-${version}-apng.patch.gz";
-    sha256 = "0wysnv0d8h7pyz7gfagnkwra2k7malqga1cn6wbk2l7a8k2r53qi";
+    sha256 = "1sf27a5gvwvcm4wsf2pyq87d3g4l2fym8cirq9sli54bi753ikbh";
   };
   whenPatched = stdenv.lib.optionalString apngSupport;
 
@@ -30,8 +30,8 @@ in stdenv.mkDerivation rec {
   meta = with stdenv.lib; {
     description = "The official reference implementation for the PNG file format" + whenPatched " with animation patch";
     homepage = http://www.libpng.org/pub/png/libpng.html;
-    license = "free-non-copyleft"; # http://www.libpng.org/pub/png/src/libpng-LICENSE.txt
+    license = licenses.libpng;
     platforms = platforms.all;
-    maintainers = [ maintainers.vcunat ];
+    maintainers = [ maintainers.vcunat maintainers.fuuzetsu ];
   };
 }

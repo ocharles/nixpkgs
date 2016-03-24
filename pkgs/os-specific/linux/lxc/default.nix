@@ -3,21 +3,27 @@
 }:
 
 stdenv.mkDerivation rec {
-  name = "lxc-1.0.0.beta1";
+  name = "lxc-1.0.6";
 
   src = fetchurl {
     url = "http://github.com/lxc/lxc/archive/${name}.tar.gz";
-    sha256 = "1ee177c4d2ba5f9cb33c1b36f3c2160ca0b00c9fa527fc53a9c5868345306f03";
+    sha256 = "075i5h136b3dnf8nk6mpailz6i18yv1zcsj0jdpr9kg2i6d1ksia";
   };
 
   buildInputs = [ libcap apparmor perl docbook2x gnutls autoreconfHook pkgconfig ];
 
   patches = [ ./install-localstatedir-in-store.patch ./support-db2x.patch ];
 
-  preConfigure = "export XML_CATALOG_FILES=${docbook_xml_dtd_45}/xml/dtd/docbook/catalog.xml";
+  preConfigure = ''
+    export XML_CATALOG_FILES=${docbook_xml_dtd_45}/xml/dtd/docbook/catalog.xml
+    substituteInPlace doc/rootfs/Makefile.am --replace '@LXCROOTFSMOUNT@' '$out/lib/lxc/rootfs'
+    substituteInPlace configure.ac --replace '$sysconfdir/' '/etc/'
+    substituteInPlace configure.ac --replace '$${sysconfdir}/' '/etc/'
+  '';
 
   configureFlags = [
     "--localstatedir=/var"
+    "--with-rootfs-path=/var/lib/lxc/rootfs"
     "--enable-doc"
     "--enable-tests"
     "--enable-apparmor"

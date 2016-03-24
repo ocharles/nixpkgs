@@ -21,8 +21,8 @@ stdenv.mkDerivation {
     cp -R * $out
     set +e
     for a in $out/bin/* ; do
-      patchelf --interpreter $(cat $NIX_GCC/nix-support/dynamic-linker) \
-        --set-rpath $(cat $NIX_GCC/nix-support/orig-libc)/lib:$(cat $NIX_GCC/nix-support/orig-gcc)/lib64:$(cat $NIX_GCC/nix-support/orig-gcc)/lib $a
+      patchelf --interpreter $(cat $NIX_CC/nix-support/dynamic-linker) \
+        --set-rpath $(cat $NIX_CC/nix-support/orig-libc)/lib:$(cat $NIX_CC/nix-support/orig-gcc)/lib64:$(cat $NIX_CC/nix-support/orig-gcc)/lib $a
     done
     set -e
     mv $out/bin/gnatgcc_2wrap $out/bin/gnatgcc
@@ -38,7 +38,7 @@ stdenv.mkDerivation {
 
   meta = {
     homepage = http://gentoo.org;
-    license = "GPLv3+";  # runtime support libraries are typically LGPLv3+
+    license = stdenv.lib.licenses.gpl3Plus;  # runtime support libraries are typically LGPLv3+
     maintainers = [
       stdenv.lib.maintainers.viric
     ];

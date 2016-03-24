@@ -9,7 +9,8 @@ stdenv.mkDerivation rec {
   };
 
   patches =
-    (stdenv.lib.optional stdenv.isFreeBSD ./freebsd-install.patch);
+    [ ./lcov-except-unreach.patch ./no-warn-missing.patch ]
+    ++ stdenv.lib.optional stdenv.isFreeBSD ./freebsd-install.patch;
 
   preBuild = ''
     makeFlagsArray=(PREFIX=$out BIN_DIR=$out/bin MAN_DIR=$out/share/man)
@@ -25,8 +26,8 @@ stdenv.mkDerivation rec {
     done
   '';
 
-  meta = {
-    description = "LCOV, a code coverage tool that enhances GNU gcov";
+  meta = with stdenv.lib; {
+    description = "Code coverage tool that enhances GNU gcov";
 
     longDescription =
       '' LCOV is an extension of GCOV, a GNU tool which provides information
@@ -38,9 +39,9 @@ stdenv.mkDerivation rec {
       '';
 
     homepage = http://ltp.sourceforge.net/coverage/lcov.php;
-    license = "GPLv2+";
+    license = stdenv.lib.licenses.gpl2Plus;
 
-    maintainers = [ ];
-    platforms = stdenv.lib.platforms.all;
+    maintainers = [ maintainers.mornfall ];
+    platforms = platforms.all;
   };
 }

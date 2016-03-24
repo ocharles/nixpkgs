@@ -1,27 +1,30 @@
-{ stdenv, fetchurl, pkgconfig, gtk, girara, gettext, docutils, file, makeWrapper }:
+{ stdenv, fetchurl, pkgconfig, gtk, girara, ncurses, gettext, docutils, file, makeWrapper, zathura_icon, sqlite }:
 
 stdenv.mkDerivation rec {
-  version = "0.2.6";
+  version = "0.3.2";
   name = "zathura-core-${version}";
 
   src = fetchurl {
     url = "http://pwmt.org/projects/zathura/download/zathura-${version}.tar.gz";
-    sha1 = "d84878388969d523027a1661f49fd29638bd460b";
+    sha256 = "1qk5s7cyqp4l673yhma5igk9g24p5jyqyy81fdk7q7xjqlym19px";
   };
 
-  buildInputs = [ pkgconfig file gtk girara gettext makeWrapper ];
+  buildInputs = [ pkgconfig file gtk girara gettext makeWrapper sqlite ];
 
-  # Bug in zathura build system: we should remove empty manfiles in order them
-  # to be compiled properly
-  preBuild = ''
-    rm zathura.1
-    rm zathurarc.5
-  '';
-
-  makeFlags = [ "PREFIX=$(out)" "RSTTOMAN=${docutils}/bin/rst2man.py" "VERBOSE=1" ];
+  makeFlags = [
+    "PREFIX=$(out)"
+    "RSTTOMAN=${docutils}/bin/rst2man.py"
+    "VERBOSE=1"
+    "TPUT=${ncurses}/bin/tput"
+  ];
 
   postInstall = ''
-    wrapProgram "$out/bin/zathura" --prefix PATH ":" "${file}/bin"
+    wrapProgram "$out/bin/zathura" \
+      --prefix PATH ":" "${file}/bin" \
+      --prefix XDG_CONFIG_DIRS ":" "$out/etc"
+
+    mkdir -pv $out/etc
+    echo "set window-icon ${zathura_icon}" > $out/etc/zathurarc
   '';
 
   meta = {

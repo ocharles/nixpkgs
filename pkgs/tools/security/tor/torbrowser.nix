@@ -9,26 +9,29 @@ let
   torEnv = buildEnv {
     name = "tor-env";
     paths = [
-      stdenv.gcc.gcc zlib glib alsaLib dbus dbus_glib gtk atk pango freetype
+      stdenv.cc.gcc zlib glib alsaLib dbus dbus_glib gtk atk pango freetype
       fontconfig gdk_pixbuf cairo xlibs.libXrender xlibs.libX11 xlibs.libXext
       xlibs.libXt
     ];
   };
 
+  ldLibraryPath = if bits == "64" then torEnv+"/lib:"+torEnv+"/lib64"
+        else torEnv+"/lib";
+
 in stdenv.mkDerivation rec {
   name = "tor-browser-${version}";
-  version = "3.5";
+  version = "4.0.2";
 
   src = fetchurl {
-    url = "https://www.torproject.org/dist/torbrowser/${version}/tor-browser-linux${bits}-${version}_en-US.tar.xz";
+    url = "https://archive.torproject.org/tor-package-archive/torbrowser/${version}/tor-browser-linux${bits}-${version}_en-US.tar.xz";
     sha256 = if bits == "64" then
-      "e448dc90365a88d73a6ff85347adbe763ef0f800d0cb2e7b7165d7f0646f7c41" else
-      "b0b29b4e75cd4a1aaecf7f4716216edcfc5947516744e2eaeae38bec1d03cea1";
+      "02ibpkfq6cmr5dxgps9hr0dk1vgmda3m4g24yq6cg15sp94147mh" else
+      "1cxhkbdrwixfg81wwd6hdf5zbil12mff4yfqxzlwp55iqh49skry";
   };
 
   patchPhase = ''
-    patchelf --set-interpreter "$(cat $NIX_GCC/nix-support/dynamic-linker)" Browser/firefox
-    patchelf --set-interpreter "$(cat $NIX_GCC/nix-support/dynamic-linker)" Tor/tor
+    patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" Browser/firefox
+    patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" Browser/TorBrowser/Tor/tor
   '';
 
   doCheck = true;
@@ -36,24 +39,24 @@ in stdenv.mkDerivation rec {
     # Just do a simple test if all libraries get loaded by running help on
     # firefox and tor
     echo "Checking firefox..."
-    LD_LIBRARY_PATH=${torEnv}/lib Browser/firefox --help 1> /dev/null
+    LD_LIBRARY_PATH=${ldLibraryPath} Browser/firefox --help 1> /dev/null
     echo "Checking tor..."
-    LD_LIBRARY_PATH=${torEnv}/lib:Tor Tor/tor --help 1> /dev/null
+    LD_LIBRARY_PATH=${torEnv}/lib:Browser/TorBrowser/Tor Browser/TorBrowser/Tor/tor --help 1> /dev/null
   '';
 
   installPhase = ''
-    ensureDir $out/share/tor-browser
-    ensureDir $out/bin
+    mkdir -p $out/share/tor-browser
+    mkdir -p $out/bin
     cp -R * $out/share/tor-browser
 
     cat > "$out/bin/tor-browser" << EOF
-      export HOME="\$HOME/.torbrowser"
+      export HOME="\$HOME/.torbrowser4"
       if [ ! -d \$HOME ]; then
-        mkdir -p \$HOME && cp -R $out/share/tor-browser/Data \$HOME/ && chmod -R +w \$HOME
+        mkdir -p \$HOME && cp -R $out/share/tor-browser/Browser/TorBrowser/Data \$HOME/ && chmod -R +w \$HOME
         echo "pref(\"extensions.torlauncher.tordatadir_path\", \"\$HOME/Data/Tor/\");" >> \
           ~/Data/Browser/profile.default/preferences/extension-overrides.js
       fi
-      export LD_LIBRARY_PATH=${torEnv}/lib:$out/share/tor-browser/Tor
+      export LD_LIBRARY_PATH=${ldLibraryPath}:$out/share/tor-browser/Browser/TorBrowser/Tor
       $out/share/tor-browser/Browser/firefox -no-remote -profile ~/Data/Browser/profile.default "$@"
     EOF
     chmod +x $out/bin/tor-browser
@@ -61,10 +64,11 @@ in stdenv.mkDerivation rec {
 
   buildInputs = [ stdenv ];
 
-  meta = with stdenv.lib; {
-    description = "Tor Browser Bundle for GNU/Linux, everything you need to safely browse the Internet";
-    homepage = https://www.torproject.org/;
-    platforms = ["i686-linux" "x86_64-linux"];
-    maintainers = [ maintainers.offline ];
+  meta = {
+    description = "Tor Browser Bundle";
+    homepage    = https://www.torproject.org/;
+    platforms   = stdenv.lib.platforms.linux;
+    maintainers = with stdenv.lib.maintainers;
+      [ offline matejc doublec thoughtpolice ];
   };
 }

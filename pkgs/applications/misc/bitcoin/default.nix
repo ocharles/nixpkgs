@@ -1,28 +1,43 @@
-{ fetchurl, stdenv, openssl, db4, boost, zlib, miniupnpc, qt4 }:
+{ fetchurl, stdenv, openssl, db48, boost, zlib, miniupnpc, qt4, utillinux
+, pkgconfig, protobuf, qrencode, gui ? true }:
+
+with stdenv.lib;
 
 stdenv.mkDerivation rec {
-  version = "0.8.6";
-  name = "bitcoin-${version}";
+  version = "0.9.3";
+  name = "bitcoin${toString (optional (!gui) "d")}-${version}";
 
   src = fetchurl {
-    url = "mirror://sourceforge/bitcoin/${name}-linux.tar.gz";
-    sha256 = "036xx06gyrfh65rpdapff3viz1f38vzkj7lnhil6fc0s7pjmsjbk";
+    url = "https://bitcoin.org/bin/${version}/bitcoin-${version}-linux.tar.gz";
+    sha256 = "1kb59w7232qzfh952rz6vvjri2w26n9cq7baml0vifdsdhxph9f4";
   };
 
-  buildInputs = [ openssl db4 boost zlib miniupnpc qt4 ];
+  # hexdump from utillinux is required for tests
+  buildInputs = [
+    openssl db48 boost zlib miniupnpc utillinux pkgconfig protobuf 
+  ] ++ optionals gui [ qt4 qrencode ];
 
-  configurePhase = ''
-    cd src
-    qmake
+  unpackPhase = ''
+    mkdir tmp-extract && (cd tmp-extract && tar xf $src)
+    tar xf tmp-extract/bitcoin*/src/bitcoin*.tar*
+    cd bitcoin*
   '';
 
-  installPhase = ''
-    mkdir -p $out/bin
-    cp bitcoin-qt $out/bin
+  preCheck = ''
+    # At least one test requires writing in $HOME
+    HOME=$TMPDIR
   '';
+
+  configureFlags = [ "--with-boost-libdir=${boost.lib}/lib" ];
+
+  doCheck = true;
+
+  enableParallelBuilding = true;
+
+  passthru.walletName = "bitcoin";
 
   meta = {
-      description = "Bitcoin is a peer-to-peer currency";
+      description = "Peer-to-peer electronic cash system";
       longDescription= ''
         Bitcoin is a free open source peer-to-peer electronic cash system that is
         completely decentralized, without the need for a central server or trusted
@@ -30,7 +45,8 @@ stdenv.mkDerivation rec {
         with each other, with the help of a P2P network to check for double-spending.
       '';
       homepage = "http://www.bitcoin.org/";
-      maintainers = [ stdenv.lib.maintainers.roconnor ];
-      license = "MIT";
+      maintainers = [ maintainers.roconnor ];
+      license = licenses.mit;
+      platforms = platforms.unix;
   };
 }

@@ -1,11 +1,11 @@
 { stdenv, fetchurl, pkgconfig, glib, libuuid, popt }:
 
 stdenv.mkDerivation rec {
-  name = "babeltrace-1.1.1";
+  name = "babeltrace-1.2.4";
 
   src = fetchurl {
     url = "http://www.efficios.com/files/babeltrace/${name}.tar.bz2";
-    sha256 = "04jc1yd3aaq59fmpzswzc78cywpq7wzjfqdlsg7xc76ivb8cggfz";
+    sha256 = "1ccy432srwz4xzi6pswfkjsymw00g1p0aqwr0l1mfzfws8d3lvk6";
   };
 
   buildInputs = [ pkgconfig glib libuuid popt ];

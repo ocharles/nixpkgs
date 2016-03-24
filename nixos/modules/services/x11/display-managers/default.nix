@@ -7,9 +7,9 @@
 # (e.g., KDE, Gnome or a plain xterm), and optionally the *window
 # manager* (e.g. kwin or twm).
 
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-with pkgs.lib;
+with lib;
 
 let
 
@@ -22,6 +22,17 @@ let
     # We only want /lib/dri, but with a single input path, we need "/" for it to work
     pathsToLink = [ "/" ];
   };
+
+  fontconfig = config.fonts.fontconfig;
+  xresourcesXft = pkgs.writeText "Xresources-Xft" ''
+    ${optionalString (fontconfig.dpi != 0) ''Xft.dpi: ${fontconfig.dpi}''}
+    Xft.antialias: ${if fontconfig.antialias then "1" else "0"}
+    Xft.rgba: ${fontconfig.subpixel.rgba}
+    Xft.lcdfilter: lcd${fontconfig.subpixel.lcdfilter}
+    Xft.hinting: ${if fontconfig.hinting.enable then "1" else "0"}
+    Xft.autohint: ${if fontconfig.hinting.autohint then "1" else "0"}
+    Xft.hintstyle: hint${fontconfig.hinting.style}
+  '';
 
   # file provided by services.xserver.displayManager.session.script
   xsession = wm: dm: pkgs.writeScript "xsession"
@@ -51,17 +62,6 @@ let
 
       ''}
 
-      ${optionalString cfg.startOpenSSHAgent ''
-        if test -z "$SSH_AUTH_SOCK"; then
-            # Restart this script as a child of the SSH agent.  (It is
-            # also possible to start the agent as a child that prints
-            # the required environment variabled on stdout, but in
-            # that mode ssh-agent is not terminated when we log out.)
-            export SSH_ASKPASS=${pkgs.x11_ssh_askpass}/libexec/x11-ssh-askpass
-            exec ${pkgs.openssh}/bin/ssh-agent "$0" "$sessionType"
-        fi
-      ''}
-
       ${optionalString cfg.startGnuPGAgent ''
         if test -z "$SSH_AUTH_SOCK"; then
             # Restart this script as a child of the GnuPG agent.
@@ -79,18 +79,21 @@ let
       # Start PulseAudio if enabled.
       ${optionalString (config.hardware.pulseaudio.enable) ''
         ${optionalString (!config.hardware.pulseaudio.systemWide)
-          "${pkgs.pulseaudio}/bin/pulseaudio --start"
+          "${config.hardware.pulseaudio.package}/bin/pulseaudio --start"
         }
 
         # Publish access credentials in the root window.
-        ${pkgs.pulseaudio}/bin/pactl load-module module-x11-publish "display=$DISPLAY"
+        ${config.hardware.pulseaudio.package}/bin/pactl load-module module-x11-publish "display=$DISPLAY"
 
         # Keep track of devices.  Mostly useful for Phonon/KDE.
-        ${pkgs.pulseaudio}/bin/pactl load-module module-device-manager "do_routing=1"
+        ${config.hardware.pulseaudio.package}/bin/pactl load-module module-device-manager "do_routing=1"
       ''}
 
       # Load X defaults.
-      if test -e ~/.Xdefaults; then
+      ${xorg.xrdb}/bin/xrdb -merge ${xresourcesXft}
+      if test -e ~/.Xresources; then
+          ${xorg.xrdb}/bin/xrdb -merge ~/.Xresources
+      elif test -e ~/.Xdefaults; then
           ${xorg.xrdb}/bin/xrdb -merge ~/.Xdefaults
       fi
 
@@ -180,14 +183,13 @@ in
 
       xserverBin = mkOption {
         type = types.path;
-        default = "${xorg.xorgserver}/bin/X";
         description = "Path to the X server used by display managers.";
       };
 
       xserverArgs = mkOption {
         type = types.listOf types.str;
         default = [];
-        example = [ "-ac" "-logverbose" "-nolisten tcp" ];
+        example = [ "-ac" "-logverbose" "-verbose" "-nolisten tcp" ];
         description = "List of arguments for the X server.";
         apply = toString;
       };
@@ -262,14 +264,16 @@ in
 
         execCmd = mkOption {
           type = types.str;
-          example = "${pkgs.slim}/bin/slim";
+          example = literalExample ''
+            "''${pkgs.slim}/bin/slim"
+          '';
           description = "Command to start the display manager.";
         };
 
         environment = mkOption {
           type = types.attrsOf types.unspecified;
           default = {};
-          example = { SLIM_CFGFILE = /etc/slim.conf; };
+          example = { SLIM_CFGFILE = "/etc/slim.conf"; };
           description = "Additional environment variables needed by the display manager.";
         };
 
@@ -286,6 +290,12 @@ in
       };
 
     };
+
+  };
+
+  config = {
+
+    services.xserver.displayManager.xserverBin = "${xorg.xorgserver}/bin/X";
 
   };
 

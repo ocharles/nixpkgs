@@ -1,19 +1,20 @@
-{ stdenv, fetchurl, lua, cairo, cmake, imagemagick, pkgconfig, gdk_pixbuf
+{ stdenv, fetchurl, luaPackages, cairo, cmake, imagemagick, pkgconfig, gdk_pixbuf
 , xlibs, libstartup_notification, libxdg_basedir, libpthreadstubs
-, xcb-util-cursor, lgi, makeWrapper, pango, gobjectIntrospection, unclutter
+, xcb-util-cursor, makeWrapper, pango, gobjectIntrospection, unclutter
 , compton, procps, iproute, coreutils, curl, alsaUtils, findutils, rxvt_unicode
-, which, dbus, nettools, git, asciidoc, doxygen }:
+, which, dbus, nettools, git, asciidoc, doxygen, xmlto, docbook_xml_dtd_45
+, docbook_xsl }:
 
 let
-  version = "3.5.2";
-in
+  version = "3.5.5";
+in with luaPackages;
 
 stdenv.mkDerivation rec {
   name = "awesome-${version}";
  
   src = fetchurl {
     url    = "http://awesome.naquadah.org/download/awesome-${version}.tar.xz";
-    sha256 = "11iya03yzr8sa3snmywlw22ayg0d3dcy49pi8fz0bycf5aq6b38q";
+    sha256 = "0iwd4pjvq0akm9dbipbl4m4fm24m017l06arasr445v2qkbxnc5z";
   };
 
   meta = with stdenv.lib; {
@@ -31,6 +32,7 @@ stdenv.mkDerivation rec {
     dbus
     doxygen
     gdk_pixbuf
+    gobjectIntrospection
     git
     imagemagick
     lgi
@@ -46,27 +48,35 @@ stdenv.mkDerivation rec {
     xlibs.libXau
     xlibs.libXdmcp
     xlibs.libxcb
+    xlibs.libxshmfence
     xlibs.xcbutil
     xlibs.xcbutilimage
     xlibs.xcbutilkeysyms
     xlibs.xcbutilrenderutil
     xlibs.xcbutilwm
+    xmlto docbook_xml_dtd_45 docbook_xsl
   ];
 
-  AWESOME_IGNORE_LGI = 1;
+  cmakeFlags = "-DGENERATE_MANPAGES=ON";
 
-  LUA_CPATH = "${lgi}/lib/lua/5.1/?.so";
-  LUA_PATH  = "${lgi}/share/lua/5.1/?.lua;${lgi}/share/lua/5.1/lgi/?.lua";
+  LD_LIBRARY_PATH = "${cairo}/lib:${pango}/lib:${gobjectIntrospection}/lib";
+  GI_TYPELIB_PATH = "${pango}/lib/girepository-1.0";
+  LUA_CPATH = "${lgi}/lib/lua/${lua.luaversion}/?.so";
+  LUA_PATH  = "${lgi}/share/lua/${lua.luaversion}/?.lua;${lgi}/share/lua/${lua.luaversion}/lgi/?.lua";
 
   postInstall = ''
     wrapProgram $out/bin/awesome \
-      --set LUA_CPATH '"${lgi}/lib/lua/5.1/?.so"' \
-      --set LUA_PATH '"${lgi}/share/lua/5.1/?.lua;${lgi}/share/lua/5.1/lgi/?.lua"' \
-      --set GI_TYPELIB_PATH "${pango}/lib/girepository-1.0" \
-      --set LD_LIBRARY_PATH "${cairo}/lib:${pango}/lib:${gobjectIntrospection}/lib" \
+      --prefix LUA_CPATH ";" '"${lgi}/lib/lua/${lua.luaversion}/?.so"' \
+      --prefix LUA_PATH ";" '"${lgi}/share/lua/${lua.luaversion}/?.lua;${lgi}/share/lua/${lua.luaversion}/lgi/?.lua"' \
+      --prefix GI_TYPELIB_PATH : "$GI_TYPELIB_PATH" \
+      --prefix LD_LIBRARY_PATH : "${cairo}/lib:${pango}/lib:${gobjectIntrospection}/lib" \
       --prefix PATH : "${compton}/bin:${unclutter}/bin:${procps}/bin:${iproute}/sbin:${coreutils}/bin:${curl}/bin:${alsaUtils}/bin:${findutils}/bin:${rxvt_unicode}/bin"
 
     wrapProgram $out/bin/awesome-client \
       --prefix PATH : "${which}/bin"
   '';
+
+  passthru = {
+    inherit lua;
+  };
 }

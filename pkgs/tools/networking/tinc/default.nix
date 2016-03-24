@@ -1,12 +1,12 @@
 {stdenv, fetchurl, lzo, openssl, zlib}:
 
 stdenv.mkDerivation rec {
-  version = "1.0.23";
+  version = "1.0.25";
   name = "tinc-${version}";
 
   src = fetchurl {
     url = "http://www.tinc-vpn.org/packages/tinc-${version}.tar.gz";
-    sha256 = "04i88hr46nx3x3s71kasm9qrjhnn35icxh9zwchki47z2vgnpw5w";
+    sha256 = "0cziyiwsfcvk12dahqwi5wh0q326yhayy8ijnrjp7mwlwmacbhf5";
   };
 
   buildInputs = [ lzo openssl zlib ];

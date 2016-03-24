@@ -1,19 +1,20 @@
-{ stdenv, fetchurl, python, gettext, intltool, pkgconfig, jackaudio, libsndfile
-, glib, gtk, glibmm, gtkmm, fftw, librdf, ladspaH, boost }:
+{ stdenv, fetchurl, avahi, boost, eigen, fftw, gettext, glib, glibmm, gtk
+, gtkmm, intltool, jack2, ladspaH, librdf, libsndfile, lilv, lv2
+, pkgconfig, python, serd, sord, sratom }:
 
 stdenv.mkDerivation rec {
   name = "guitarix-${version}";
-  version = "0.25.2";
+  version = "0.32.1";
 
   src = fetchurl {
     url = "mirror://sourceforge/guitarix/guitarix2-${version}.tar.bz2";
-    sha256 = "1wcg3yc2iy72hj6z9l88393f00by0iwhhn8xrc3q55p4rj0mnrga";
+    sha256 = "1sl7ca1lj0wchh3xq7qw3zqrbyyh4r8cwljb9i3yplpsn90d1i3k";
   };
 
-  buildInputs =
-    [ python gettext intltool pkgconfig jackaudio libsndfile glib gtk glibmm
-      gtkmm fftw librdf ladspaH boost
-    ];
+  buildInputs = [
+    avahi boost eigen fftw gettext glib glibmm gtk gtkmm intltool
+    jack2 ladspaH librdf libsndfile lilv lv2 pkgconfig python serd sord sratom
+  ];
 
   configurePhase = "python waf configure --prefix=$out";
 
@@ -21,7 +22,7 @@ stdenv.mkDerivation rec {
 
   installPhase = "python waf install";
 
-  meta = { 
+  meta = with stdenv.lib; { 
     description = "A virtual guitar amplifier for Linux running with JACK";
     longDescription = ''
         guitarix is a virtual guitar amplifier for Linux running with
@@ -46,8 +47,8 @@ stdenv.mkDerivation rec {
       crazy sounds never heard before.
     '';
     homepage = http://guitarix.sourceforge.net/;
-    license = stdenv.lib.licenses.gpl3Plus;
-    maintainers = [ stdenv.lib.maintainers.astsmtl ];
-    platforms = stdenv.lib.platforms.linux;
+    license = licenses.gpl3Plus;
+    maintainers = with maintainers; [ astsmtl goibhniu ];
+    platforms = platforms.linux;
   };
 }

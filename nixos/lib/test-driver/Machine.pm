@@ -482,7 +482,7 @@ sub screenshot {
     my $name = basename($filename);
     $self->nest("making screenshot ‘$name’", sub {
         $self->sendMonitorCommand("screendump $tmp");
-        system("convert $tmp ${filename}") == 0
+        system("pnmtopng $tmp > ${filename}") == 0
             or die "cannot convert screenshot";
         unlink $tmp;
     }, { image => $name } );
@@ -495,7 +495,9 @@ sub waitForX {
     my ($self, $regexp) = @_;
     $self->nest("waiting for the X11 server", sub {
         retry sub {
-            my ($status, $out) = $self->execute("xwininfo -root > /dev/null 2>&1");
+            my ($status, $out) = $self->execute("journalctl -b SYSLOG_IDENTIFIER=systemd | grep 'session opened'");
+            return 0 if $status != 0;
+            ($status, $out) = $self->execute("xwininfo -root > /dev/null 2>&1");
             return 1 if $status == 0;
         }
     });

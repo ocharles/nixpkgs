@@ -9,21 +9,18 @@ buildPythonPackage rec {
     sha256 = "0g0ayql5b9mkjam8hym6zyg6bv77lbh66rv1fyvgqb17kfc1xkpj";
   };
 
-  buildInputs = [ python gmp ];
+  preConfigure = ''
+    sed -i 's,/usr/include,/no-such-dir,' configure
+    sed -i "s!,'/usr/include/'!!" setup.py
+  '';
 
-  buildPhase =
-    ''
-      python ./setup.py build_ext --library-dirs=${gmp}/lib
-    '';
+  buildInputs = stdenv.lib.optional (!python.isPypy or false) gmp; # optional for pypy
 
-#  installPhase =
-#    ''
-#      python ./setup.py install --prefix=$out
-#    '';
+  doCheck = !(python.isPypy or stdenv.isDarwin); # error: AF_UNIX path too long
 
   meta = {
     homepage = "http://www.pycrypto.org/";
     description = "Python Cryptography Toolkit";
-    platforms = stdenv.lib.platforms.gnu;
+    platforms = stdenv.lib.platforms.unix;
   };
 }

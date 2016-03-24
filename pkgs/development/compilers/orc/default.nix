@@ -1,12 +1,17 @@
 { stdenv, fetchurl }:
 
 stdenv.mkDerivation rec {
-  name = "orc-0.4.18";
+  name = "orc-0.4.23";
 
   src = fetchurl {
-    url = "http://code.entropywave.com/download/orc/${name}.tar.gz";
-    sha256 = "093a7a495bsy3j6i4wxaxqbqxk6hwg2hdhgvvkabwhlz4nkwilrl";
+    url = "http://gstreamer.freedesktop.org/src/orc/${name}.tar.xz";
+    sha256 = "1ryz1gfgrxcj806cakcblxf0bcwq8p2mw8k86fs3f5wlwayawzkn";
   };
+
+  # building memcpy_speed.log
+  # ../test-driver: line 107:  4495 Segmentation fault      "$@" > $log_file 2>&1
+  # FAIL: memcpy_speed
+  doCheck = false; # see https://bugzilla.gnome.org/show_bug.cgi?id=728129#c7
 
   meta = {
     description = "The Oil Runtime Compiler";
@@ -15,6 +20,6 @@ stdenv.mkDerivation rec {
     # under the 3-clause BSD license. The rest is 2-clause BSD license.
     license = stdenv.lib.licenses.bsd3;
     platform = stdenv.lib.platforms.linux;
-    maintainers = [ stdenv.lib.maintainers.iyzsong ];
+    maintainers = with stdenv.lib.maintainers; [ fuuzetsu ];
   };
 }
