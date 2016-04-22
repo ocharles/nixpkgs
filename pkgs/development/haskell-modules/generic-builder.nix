@@ -47,6 +47,7 @@
 , shellHook ? ""
 , coreSetup ? false # Use only core packages to build Setup.hs.
 , useCpphs ? false
+, outputs ? [ ]
 } @ args:
 
 assert editedCabalFile != null -> revision != null;
@@ -327,4 +328,8 @@ stdenv.mkDerivation ({
 // optionalAttrs (postFixup != "")      { inherit postFixup; }
 // optionalAttrs (dontStrip)            { inherit dontStrip; }
 // optionalAttrs (stdenv.isLinux)       { LOCALE_ARCHIVE = "${glibcLocales}/lib/locale/locale-archive"; }
+// optionalAttrs (outputs != [])         {
+  inherit outputs;
+  setOutputFlags = false;
+}
 )
